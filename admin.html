@@ -33,7 +33,7 @@
 <button type="button" class="danger" onclick="resetSettings()">↩ Reset Website Changes</button>
 <p id="settingsMsg" class="small"></p>
 </div>
-<div class="panel"><h2>Google Maps</h2><input id="mapurl" placeholder="Google Maps URL"><button onclick="saveMap()">Save Map</button></div><div class="panel"><h2>Add Menu Item</h2><input id="n" placeholder="Name"><input id="p" type="number" placeholder="Price ₹"><input id="img" placeholder="Image URL"><textarea id="desc" placeholder="Description"></textarea><button onclick="addItem()">Add Item</button></div><div class="panel"><h2>Menu Management</h2><div id="list">Loading...</div></div><div class="panel"><h2>Orders</h2><div id="orders">Loading...</div></div></div></div><script>const SB_URL="https://qxktximeddpttcjkaumo.supabase.co",SB_KEY="sb_publishable_mUL6OaOwJ649Xi68uQOcLw_9g0fM8mM";let db=null;function getDb(){if(!db){if(!window.supabase)throw new Error("Supabase library load nahi hui. Internet connection check karein.");db=window.supabase.createClient(SB_URL,SB_KEY)}return db}function esc(v){return String(v??"").replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c])}function money(n){return "₹"+Number(n||0).toLocaleString("en-IN")}const ADMIN_PASSWORD="Bilal@882664";
+<div class="panel"><h2>Google Maps</h2><input id="mapurl" placeholder="Google Maps URL"><button onclick="saveMap()">Save Map</button></div><div class="panel"><h2>Add Menu Item</h2><input id="n" placeholder="Name"><input id="p" type="number" placeholder="Price ₹"><input id="img" placeholder="Image URL"><textarea id="desc" placeholder="Description"></textarea><button onclick="addItem()">Add Item</button></div><div class="panel"><h2>Menu Management</h2><div id="list">Loading...</div></div><div class="panel"><h2>Orders</h2><div id="orders">Loading...</div></div></div></div><script>const cfg=window.DELHI6_CONFIG||{}; const SB_URL=cfg.SUPABASE_URL||"", SB_KEY=cfg.SUPABASE_ANON_KEY||""; let db=null;function getDb(){if(!db){if(!SB_URL||!SB_KEY)throw new Error("Supabase settings config.js me nahi mili."); if(!window.supabase)throw new Error("Supabase library load nahi hui. Internet connection check karein."); db=window.supabase.createClient(SB_URL,SB_KEY)}return db}function esc(v){return String(v??"").replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c])}function money(n){return "₹"+Number(n||0).toLocaleString("en-IN")}
 
 function togglePassword(){
   const input=document.getElementById("password");
@@ -53,13 +53,16 @@ function togglePassword(){
 function login(){
   const input=document.getElementById("password");
   const err=document.getElementById("loginError");
-  const entered=(input.value || "").trim();
-  err.style.display="none";
-  if(entered !== ADMIN_PASSWORD){
-    err.textContent="❌ Wrong password. Please enter the correct password.";
-    err.style.display="block";
-    input.focus();
-    input.select();
+  const expected=String((window.DELHI6_CONFIG||{}).ADMIN_PASSWORD||"").trim();
+  const entered=String(input?.value||"").trim();
+  if(err) err.style.display="none";
+  if(!expected){
+    if(err){err.textContent="❌ Admin password is not loaded. Check that config.js is in the same GitHub folder.";err.style.display="block";}
+    return false;
+  }
+  if(entered!==expected){
+    if(err){err.textContent="❌ Wrong password. Please enter the correct password.";err.style.display="block";}
+    input?.focus(); input?.select();
     return false;
   }
   sessionStorage.setItem("delhi6_admin_logged_in","1");
