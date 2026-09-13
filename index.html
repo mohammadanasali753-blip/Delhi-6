@@ -125,7 +125,22 @@ async function loadSiteSettings(){
     const map=document.getElementById("map");
     if(map&&cfg.mapUrl)map.href=cfg.mapUrl;
     document.title=(cfg.brand||"Delhi 6 Hotel")+" | Order Online";
+    renderHotelSlider(cfg);
   }catch(e){}
+}
+
+
+function renderHotelSlider(cfg){
+  const box=document.getElementById("hotelSlider"); if(!box)return;
+  let imgs=Array.isArray(cfg.hotelImages)?cfg.hotelImages.filter(Boolean):[];
+  if(cfg.hotelImageUrl && !imgs.includes(cfg.hotelImageUrl)) imgs.unshift(cfg.hotelImageUrl);
+  imgs=[...new Set(imgs)];
+  if(!imgs.length){box.style.display="none";if(hotelSlideTimer)clearInterval(hotelSlideTimer);return;}
+  box.style.display="block"; hotelSlideIndex=0;
+  box.innerHTML=imgs.map((u,i)=>`<img src="${esc(u)}" class="${i===0?'active':''}" alt="Delhi 6 Hotel" onerror="this.style.display='none'">`).join("")+`<div class="sliderDots">${imgs.map((_,i)=>`<span class="${i===0?'active':''}"></span>`).join("")}</div>`;
+  const slides=[...box.querySelectorAll("img")],dots=[...box.querySelectorAll(".sliderDots span")];
+  if(hotelSlideTimer)clearInterval(hotelSlideTimer);
+  if(slides.length>1){hotelSlideTimer=setInterval(()=>{slides[hotelSlideIndex]?.classList.remove("active");dots[hotelSlideIndex]?.classList.remove("active");hotelSlideIndex=(hotelSlideIndex+1)%slides.length;slides[hotelSlideIndex]?.classList.add("active");dots[hotelSlideIndex]?.classList.add("active")},3000);}
 }
 
 async function load(){try{let {data,error}=await db.from("menu_items").select("*").eq("available",true).order("created_at");if(error)throw error;menu=data||[];if(!menu.length)menu=fallback;render()}catch(e){menu=fallback;render()}}
