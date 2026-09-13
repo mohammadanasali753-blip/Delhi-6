@@ -1,4 +1,15 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Delhi 6 Hotel Admin</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>*{box-sizing:border-box}body{margin:0;font-family:Arial;background:#fffaf0;color:#171717}header{background:#f4c400;padding:18px 6%;font-size:23px;font-weight:900}.wrap{max-width:1050px;margin:auto;padding:25px 5%}.panel{background:#fff;padding:20px;border-radius:16px;box-shadow:0 3px 15px #0002;margin-bottom:18px}input,textarea,select{width:100%;padding:11px;margin:6px 0;border:1px solid #ccc;border-radius:8px}button{padding:11px 15px;border:0;border-radius:9px;background:#f4c400;font-weight:900;cursor:pointer}.danger{background:#171717;color:#fff}.logout{float:right}.row{display:grid;grid-template-columns:1.3fr .7fr 1.3fr .8fr .7fr;gap:7px;border-top:1px solid #ddd;padding:12px 0;align-items:center}.order{border-top:1px solid #ddd;padding:15px 0}.status{padding:8px;border-radius:8px;font-weight:800}.small{font-size:13px;color:#666}@media(max-width:700px){.row{grid-template-columns:1fr}.logout{float:none;margin-top:10px;width:100%}}</style></head><body><header>🔐 Delhi 6 Hotel — Admin <button id="logoutBtn" class="logout" onclick="logout()" style="display:none">Logout</button></header><div class="wrap"><div id="login" class="panel"><h2>Admin Login</h2><input id="email" type="email" placeholder="Admin email"><input id="password" type="password" placeholder="Password"><button type="button" onclick="login()">Login</button><p class="small">Admin account Supabase Authentication me banana hoga.</p></div><div id="app" style="display:none">
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Delhi 6 Hotel Admin</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>*{box-sizing:border-box}body{margin:0;font-family:Arial;background:#fffaf0;color:#171717}header{background:#f4c400;padding:18px 6%;font-size:23px;font-weight:900}.wrap{max-width:1050px;margin:auto;padding:25px 5%}.panel{background:#fff;padding:20px;border-radius:16px;box-shadow:0 3px 15px #0002;margin-bottom:18px}input,textarea,select{width:100%;padding:11px;margin:6px 0;border:1px solid #ccc;border-radius:8px}button{padding:11px 15px;border:0;border-radius:9px;background:#f4c400;font-weight:900;cursor:pointer}.danger{background:#171717;color:#fff}.logout{float:right}.row{display:grid;grid-template-columns:1.3fr .7fr 1.3fr .8fr .7fr;gap:7px;border-top:1px solid #ddd;padding:12px 0;align-items:center}.order{border-top:1px solid #ddd;padding:15px 0}.status{padding:8px;border-radius:8px;font-weight:800}.small{font-size:13px;color:#666}@media(max-width:700px){.row{grid-template-columns:1fr}.logout{float:none;margin-top:10px;width:100%}}
+.login-card{max-width:460px;margin:70px auto;text-align:center;padding:34px 28px;border-radius:22px;background:linear-gradient(145deg,#fff,#fffdf3);box-shadow:0 12px 35px #0002;border:1px solid #f1df8a}.login-icon{width:72px;height:72px;margin:0 auto 14px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#f4c400;font-size:34px;box-shadow:0 8px 20px #f4c40055}.welcome{font-size:12px;font-weight:900;letter-spacing:3px;color:#8a6d00}.login-card h2{font-size:30px;margin:7px 0}.login-sub{color:#666;margin:0 0 20px}.pass-wrap{position:relative}.pass-wrap input{margin:0;padding:15px 52px 15px 16px;border:2px solid #e3d58a;border-radius:13px;font-size:16px;outline:none}.pass-wrap input:focus{border-color:#f4c400;box-shadow:0 0 0 4px #f4c40022}.eye{position:absolute;right:7px;top:7px;width:42px;height:42px;padding:0;border-radius:10px;background:transparent;font-size:20px}.login-btn{width:100%;margin-top:14px;padding:14px;border-radius:13px;background:#171717;color:#fff;font-size:16px}.login-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px #0003}.login-error{display:none;color:#b00020;background:#fff0f0;border-radius:9px;padding:9px;margin-top:12px;font-size:14px;font-weight:700}
+</style></head><body><header>🔐 Delhi 6 Hotel — Admin <button id="logoutBtn" class="logout" onclick="logout()" style="display:none">Logout</button></header><div class="wrap"><div id="login" class="panel login-card">
+<div class="login-icon">🔐</div>
+<div class="welcome">WELCOME</div>
+<h2>Delhi 6 Admin</h2>
+<p class="login-sub">Admin panel me continue karne ke liye password enter karein.</p>
+<div class="pass-wrap"><input id="password" type="password" placeholder="Enter admin password" autocomplete="current-password" onkeydown="if(event.key==='Enter') login()"><button class="eye" type="button" onclick="togglePassword()" aria-label="Show password">👁️</button></div>
+<div id="loginError" class="login-error"></div>
+<button class="login-btn" type="button" onclick="login()">Login →</button>
+<p class="small">🔒 Secure Admin Access</p>
+</div><div id="app" style="display:none">
 <div class="panel">
 <h2>🎨 Website Customization</h2>
 <p class="small">Yahan se website ka colour aur likha hua text badal sakte ho. Save karne ke baad customer website refresh karega.</p>
@@ -27,20 +38,16 @@
 <button type="button" class="danger" onclick="resetSettings()">↩ Reset Website Changes</button>
 <p id="settingsMsg" class="small"></p>
 </div>
-<div class="panel"><h2>Google Maps</h2><input id="mapurl" placeholder="Google Maps URL"><button onclick="saveMap()">Save Map</button></div><div class="panel"><h2>Add Menu Item</h2><input id="n" placeholder="Name"><input id="p" type="number" placeholder="Price ₹"><input id="img" placeholder="Image URL"><textarea id="desc" placeholder="Description"></textarea><button onclick="addItem()">Add Item</button></div><div class="panel"><h2>Menu Management</h2><div id="list">Loading...</div></div><div class="panel"><h2>Orders</h2><div id="orders">Loading...</div></div></div></div><script>const SB_URL="https://qxktximeddpttcjkaumo.supabase.co",SB_KEY="sb_publishable_mUL6OaOwJ649Xi68uQOcLw_9g0fM8mM",db=supabase.createClient(SB_URL,SB_KEY);function esc(v){return String(v??"").replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c])}function money(n){return "₹"+Number(n||0).toLocaleString("en-IN")}async function login(){
-  const emailEl=document.getElementById("email");
-  const passwordEl=document.getElementById("password");
-  const btn=document.querySelector('#login button');
-  const emailValue=emailEl.value.trim();
-  const passwordValue=passwordEl.value;
-  if(!emailValue||!passwordValue){alert('Email aur password dono bharo.');return}
-  btn.disabled=true;btn.textContent='Logging in...';
-  try{
-    const r=await db.auth.signInWithPassword({email:emailValue,password:passwordValue});
-    if(r.error){alert('Login failed: '+r.error.message);return}
-    showApp();
-  }catch(e){alert('Login error: '+(e?.message||e))}
-  finally{btn.disabled=false;btn.textContent='Login'}
+<div class="panel"><h2>Google Maps</h2><input id="mapurl" placeholder="Google Maps URL"><button onclick="saveMap()">Save Map</button></div><div class="panel"><h2>Add Menu Item</h2><input id="n" placeholder="Name"><input id="p" type="number" placeholder="Price ₹"><input id="img" placeholder="Image URL"><textarea id="desc" placeholder="Description"></textarea><button onclick="addItem()">Add Item</button></div><div class="panel"><h2>Menu Management</h2><div id="list">Loading...</div></div><div class="panel"><h2>Orders</h2><div id="orders">Loading...</div></div></div></div><script>const SB_URL="https://qxktximeddpttcjkaumo.supabase.co",SB_KEY="sb_publishable_mUL6OaOwJ649Xi68uQOcLw_9g0fM8mM",db=supabase.createClient(SB_URL,SB_KEY);function esc(v){return String(v??"").replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c])}function money(n){return "₹"+Number(n||0).toLocaleString("en-IN")}const ADMIN_PASSWORD="Bilal@882664";
+function togglePassword(){const input=document.getElementById("password");const eye=document.querySelector(".eye");if(input.type==="password"){input.type="text";eye.textContent="🙈"}else{input.type="password";eye.textContent="👁️"}}
+function login(){
+  const input=document.getElementById("password");
+  const err=document.getElementById("loginError");
+  const entered=String(input.value||"").trim();
+  if(entered!==ADMIN_PASSWORD){err.textContent="Wrong password. Please try again.";err.style.display="block";input.focus();input.select();return}
+  err.style.display="none";
+  alert("Welcome to Delhi 6 Admin");
+  showApp();
 }
 async function init(){
   const s=await db.auth.getSession();
