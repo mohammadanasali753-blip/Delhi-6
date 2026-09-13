@@ -7,12 +7,17 @@
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#fffaf0;color:#171717}.nav{background:#f4c400;padding:14px 6%;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:5}.brand{font-weight:900;font-size:23px}.btn{border:0;border-radius:24px;padding:11px 18px;font-weight:800;cursor:pointer;background:#171717;color:#fff}.hero{padding:55px 6%;text-align:center;background:linear-gradient(135deg,#ffe86a,#f4c400)}h1{font-size:44px;margin:0 0 10px}.hero p{font-size:18px}.wrap{max-width:1100px;margin:auto;padding:32px 6%}.title{text-align:center}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px}.card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px #0002}.card img{width:100%;height:180px;object-fit:cover;background:#eee}.body{padding:16px}.price{font-weight:900;font-size:21px;margin:10px 0}.add{width:100%;padding:12px;border:0;border-radius:10px;background:#f4c400;font-weight:900;cursor:pointer}.contact{background:#171717;color:white;text-align:center;padding:35px 6%}.map,.wa{display:inline-block;background:#f4c400;color:#111;text-decoration:none;padding:12px 20px;border-radius:24px;font-weight:800;margin:7px}.wa{background:#25d366;color:#fff}.modal{display:none;position:fixed;inset:0;background:#0009;z-index:20;align-items:center;justify-content:center}.box{background:white;border-radius:16px;padding:22px;width:min(520px,94%);max-height:92vh;overflow:auto}.close{float:right;background:none;border:0;font-size:27px}.box input,.box textarea,.box select{width:100%;padding:12px;margin:7px 0 11px;border:1px solid #ccc;border-radius:9px;font-size:15px}.box textarea{min-height:75px}.order{width:100%;padding:14px;border:0;background:#f4c400;border-radius:10px;font-weight:900;margin-top:8px;font-size:16px}.cartline{display:flex;justify-content:space-between;border-bottom:1px solid #ddd;padding:8px 0}.qty button{border:0;background:#171717;color:#fff;border-radius:5px;padding:4px 9px;margin:0 3px}.success{display:none;background:#eaffea;padding:14px;border-radius:10px;margin-top:12px}.muted{color:#666}.empty{text-align:center;padding:25px}.err{color:#b00020;text-align:center;padding:20px}
 </style>
+
+<style id="siteCustomStyle">
+:root{--primary:#f4c400;--dark:#171717}
+.nav{background:var(--primary)!important}.hero{background:linear-gradient(135deg,var(--primary),var(--primary))!important}.add{background:var(--primary)!important}.map{background:var(--primary)!important}.contact{background:var(--dark)!important}.btn{background:var(--dark)!important}
+</style>
 </head>
 <body>
-<div class="nav"><div class="brand">🍗 Delhi 6 Hotel</div><button class="btn" onclick="openCart()">🛒 Cart (<span id="count">0</span>)</button></div>
-<section class="hero"><h1>Delhi 6 Hotel</h1><p>Fresh • Hot • Delicious Biryani</p><a class="wa" href="https://wa.me/918750794831" target="_blank">WhatsApp</a></section>
-<main class="wrap"><h2 class="title">Our Menu</h2><div id="menu" class="grid"><p class="empty">Loading menu...</p></div></main>
-<section class="contact"><h2>Visit Us</h2><p>Indra Park C12, Pali Factory, Uttam Nagar, New Delhi</p><p>📞 +91 8750794831</p><a id="map" class="map" target="_blank" href="https://www.google.com/maps/search/?api=1&query=Indra+Park+C12+Pali+Factory+Uttam+Nagar+New+Delhi">📍 Google Maps</a><a class="wa" href="https://wa.me/918750794831" target="_blank">Order on WhatsApp</a></section>
+<div class="nav"><div id="brand" class="brand">🍗 Delhi 6 Hotel</div><button class="btn" onclick="openCart()">🛒 Cart (<span id="count">0</span>)</button></div>
+<section class="hero"><h1 id="heroTitle">Delhi 6 Hotel</h1><p id="heroSub">Fresh • Hot • Delicious Biryani</p><a class="wa" href="https://wa.me/918750794831" target="_blank">WhatsApp</a></section>
+<main class="wrap"><h2 id="menuTitle" class="title">Our Menu</h2><div id="menu" class="grid"><p class="empty">Loading menu...</p></div></main>
+<section class="contact"><h2 id="contactTitle">Visit Us</h2><p id="addressText">Indra Park C12, Pali Factory, Uttam Nagar, New Delhi</p><p>📞 <span id="phoneText">+91 8750794831</span></p><a id="map" class="map" target="_blank" href="https://www.google.com/maps/search/?api=1&query=Indra+Park+C12+Pali+Factory+Uttam+Nagar+New+Delhi">📍 Google Maps</a><a class="wa" href="https://wa.me/918750794831" target="_blank">Order on WhatsApp</a></section>
 <footer style="text-align:center;padding:20px">© Delhi 6 Hotel</footer>
 <div id="modal" class="modal"><div class="box"><button class="close" onclick="closeCart()">×</button><h2>🛒 Your Order</h2><div id="items"></div><hr><div id="total" style="font-size:20px;font-weight:900">Total: ₹0</div><h3>Delivery Details</h3><input id="name" required placeholder="Your Name"><input id="phone" required type="tel" placeholder="Mobile Number"><textarea id="address" required placeholder="Full Delivery Address"></textarea><textarea id="note" placeholder="Delivery instructions (optional)"></textarea><select id="payment"><option value="Cash on Delivery">Cash on Delivery</option><option value="UPI">UPI</option></select><button class="order" onclick="placeOrder()">📲 Place Order</button><div id="success" class="success"></div></div></div>
 <script>
@@ -22,6 +27,33 @@ const db=supabase.createClient(SB_URL,SB_KEY);let menu=[],cart=[];
 const fallback=[{name:"Chicken Biryani",price:180,description:"Aromatic chicken biryani",image_url:""},{name:"Mutton Biryani",price:260,description:"Rich mutton biryani",image_url:""},{name:"Egg Biryani",price:130,description:"Tasty egg biryani",image_url:""},{name:"Veg Biryani",price:120,description:"Fragrant veg biryani",image_url:""}];
 function esc(v){return String(v??"").replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))}
 function money(n){return "₹"+Number(n||0).toLocaleString("en-IN")}
+
+async function loadSiteSettings(){
+  try{
+    let {data,error}=await db.from("site_settings").select("map_url").eq("id",1).maybeSingle();
+    if(error||!data?.map_url)return;
+    let raw=data.map_url, cfg=null;
+    try{if(raw.trim().startsWith("{"))cfg=JSON.parse(raw)}catch(e){}
+    if(!cfg)return;
+    const root=document.documentElement;
+    root.style.setProperty("--primary",cfg.primary||"#f4c400");
+    root.style.setProperty("--dark",cfg.dark||"#171717");
+    const brand=document.getElementById("brand"),heroTitle=document.getElementById("heroTitle"),heroSub=document.getElementById("heroSub"),menuTitle=document.getElementById("menuTitle"),contactTitle=document.getElementById("contactTitle"),addressText=document.getElementById("addressText"),phoneText=document.getElementById("phoneText");
+    if(brand)brand.textContent="🍗 "+(cfg.brand||"Delhi 6 Hotel");
+    if(heroTitle)heroTitle.textContent=cfg.heroTitle||cfg.brand||"Delhi 6 Hotel";
+    if(heroSub)heroSub.textContent=cfg.heroSub||"Fresh • Hot • Delicious Biryani";
+    if(menuTitle)menuTitle.textContent=cfg.menuTitle||"Our Menu";
+    if(contactTitle)contactTitle.textContent=cfg.contactTitle||"Visit Us";
+    if(addressText)addressText.textContent=cfg.address||"";
+    if(phoneText)phoneText.textContent=cfg.phone||"";
+    const wa=(cfg.wa||"").replace(/\D/g,"");
+    document.querySelectorAll(".wa").forEach(x=>{if(wa)x.href="https://wa.me/"+wa});
+    const map=document.getElementById("map");
+    if(map&&cfg.mapUrl)map.href=cfg.mapUrl;
+    document.title=(cfg.brand||"Delhi 6 Hotel")+" | Order Online";
+  }catch(e){}
+}
+
 async function load(){try{let {data,error}=await db.from("menu_items").select("*").eq("available",true).order("created_at");if(error)throw error;menu=data||[];if(!menu.length)menu=fallback;let s=await db.from("site_settings").select("map_url").eq("id",1).maybeSingle();if(s.data?.map_url)document.getElementById("map").href=s.data.map_url;render()}catch(e){menu=fallback;render()}}
 function render(){const el=document.getElementById("menu");if(!menu.length){el.innerHTML='<p class="empty">Menu is currently unavailable.</p>';return}el.innerHTML=menu.map((x,i)=>`<div class="card"><img src="${esc(x.image_url||'https://placehold.co/600x400/f4c400/111?text=Delhi+6+Biryani')}" onerror="this.src='https://placehold.co/600x400/f4c400/111?text=Delhi+6+Biryani'"><div class="body"><h3>${esc(x.name)}</h3><p class="muted">${esc(x.description||"")}</p><div class="price">${money(x.price)}</div><button class="add" onclick="add(${i})">Add to Cart</button></div></div>`).join("")}
 function add(i){const p=menu[i];let q=cart.find(x=>x.id===p.id);if(q)q.qty++;else cart.push({id:p.id,name:p.name,price:Number(p.price),qty:1});updateCount();openCart()}
@@ -30,5 +62,6 @@ function change(i,d){cart[i].qty+=d;if(cart[i].qty<=0)cart.splice(i,1);openCart(
 function openCart(){const box=document.getElementById("items");if(!cart.length){box.innerHTML='<p class="empty">Cart is empty.</p>';document.getElementById("total").textContent="Total: ₹0"}else{box.innerHTML=cart.map((x,i)=>`<div class="cartline"><span>${esc(x.name)} × ${x.qty}</span><span>${money(x.price*x.qty)} <span class="qty"><button onclick="change(${i},-1)">−</button><button onclick="change(${i},1)">+</button></span></span></div>`).join("");document.getElementById("total").textContent="Total: "+money(cart.reduce((s,x)=>s+x.price*x.qty,0))}document.getElementById("success").style.display="none";document.getElementById("modal").style.display="flex"}
 function closeCart(){document.getElementById("modal").style.display="none"}
 async function placeOrder(){if(!cart.length)return alert("Cart empty");let n=document.getElementById("name").value.trim(),p=document.getElementById("phone").value.trim(),a=document.getElementById("address").value.trim(),note=document.getElementById("note").value.trim(),pay=document.getElementById("payment").value;if(!n||!p||!a)return alert("Please fill Name, Mobile Number and Full Address.");let total=cart.reduce((s,x)=>s+x.price*x.qty,0);let payload={cart:cart,delivery_instructions:note,payment_method:pay,status:"Pending"};let {data,error}=await db.from("orders").insert({customer_name:n,phone:p,address:a,items:payload,total:total}).select("id").single();if(error)return alert("Order could not be placed: "+error.message);let msg=`New Delhi 6 Hotel Order\nOrder ID: ${data.id}\nName: ${n}\nPhone: ${p}\nAddress: ${a}\nInstructions: ${note||"None"}\nPayment: ${pay}\nItems: ${cart.map(x=>x.name+" x"+x.qty).join(", ")}\nTotal: ${money(total)}`;cart=[];updateCount();document.getElementById("success").innerHTML=`✅ Order received!<br><b>Order ID:</b> ${esc(data.id)}<br>Opening WhatsApp...`;document.getElementById("success").style.display="block";setTimeout(()=>location.href="https://wa.me/918750794831?text="+encodeURIComponent(msg),700)}
+loadSiteSettings();
 load();
 </script></body></html>
