@@ -4,6 +4,7 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Delhi 6 Hotel | Order Online</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#fffaf0;color:#171717}.nav{background:#f4c400;padding:14px 6%;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:5}.brand{font-weight:900;font-size:23px}.btn{border:0;border-radius:24px;padding:11px 18px;font-weight:800;cursor:pointer;background:#171717;color:#fff}.hero{padding:55px 6%;text-align:center;background:linear-gradient(135deg,#ffe86a,#f4c400)}h1{font-size:44px;margin:0 0 10px}.hero p{font-size:18px}.wrap{max-width:1100px;margin:auto;padding:32px 6%}.title{text-align:center}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px}.card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px #0002}.card img{width:100%;height:180px;object-fit:cover;background:#eee}.body{padding:16px}.price{font-weight:900;font-size:21px;margin:10px 0}.add{width:100%;padding:12px;border:0;border-radius:10px;background:#f4c400;font-weight:900;cursor:pointer}.contact{background:#171717;color:white;text-align:center;padding:35px 6%}.map,.wa{display:inline-block;background:#f4c400;color:#111;text-decoration:none;padding:12px 20px;border-radius:24px;font-weight:800;margin:7px}.wa{background:#25d366;color:#fff}.modal{display:none;position:fixed;inset:0;background:#0009;z-index:20;align-items:center;justify-content:center}.box{background:white;border-radius:16px;padding:22px;width:min(520px,94%);max-height:92vh;overflow:auto}.close{float:right;background:none;border:0;font-size:27px}.box input,.box textarea,.box select{width:100%;padding:12px;margin:7px 0 11px;border:1px solid #ccc;border-radius:9px;font-size:15px}.box textarea{min-height:75px}.order{width:100%;padding:14px;border:0;background:#f4c400;border-radius:10px;font-weight:900;margin-top:8px;font-size:16px}.cartline{display:flex;justify-content:space-between;border-bottom:1px solid #ddd;padding:8px 0}.qty button{border:0;background:#171717;color:#fff;border-radius:5px;padding:4px 9px;margin:0 3px}.success{display:none;background:#eaffea;padding:14px;border-radius:10px;margin-top:12px}.muted{color:#666}.authMsg{font-weight:700;color:#b00020;min-height:20px}.empty{text-align:center;padding:25px}.err{color:#b00020;text-align:center;padding:20px}.tracker{margin-top:16px;padding:16px;border-radius:14px;background:#fff8d6;border:1px solid #eadb78}.steps{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin:14px 0}.step{text-align:center;font-size:12px;font-weight:800;color:#777}.dot{width:28px;height:28px;border-radius:50%;margin:0 auto 5px;background:#ddd;display:flex;align-items:center;justify-content:center}.step.active{color:#111}.step.active .dot{background:#f4c400;color:#111}.step.done .dot{background:#171717;color:#fff}.cancelBtn{background:#b00020;color:#fff;border:0;padding:10px 14px;border-radius:9px;font-weight:900;cursor:pointer}.orderRef{font-size:12px;color:#666;word-break:break-all}.authbar{margin:16px auto 0;max-width:1100px;padding:0 6%}.authbox{background:#fff;border-radius:14px;padding:14px;box-shadow:0 3px 12px #0001}.authrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.authrow input{flex:1;min-width:180px;padding:11px;border:1px solid #ccc;border-radius:9px}.passWrap{position:relative;flex:1;min-width:180px}.passWrap input{width:100%;padding-right:48px}.eyeBtn{position:absolute;right:7px;top:50%;transform:translateY(-50%);border:0;background:#eee;border-radius:50%;width:34px;height:34px;cursor:pointer;font-size:16px}.gIcon{display:inline-flex;width:20px;height:20px;border-radius:50%;align-items:center;justify-content:center;background:#fff;color:#4285f4;border:1px solid #ddd;font-size:14px}.google{background:#fff;border:1px solid #bbb;color:#111}.upiBox{display:none;background:#fff8d6;border:1px solid #eadb78;padding:12px;border-radius:10px;margin-top:8px}.upiQr{display:block;max-width:220px;width:100%;margin:10px auto;border-radius:10px}.payUpi{display:block;text-align:center;text-decoration:none;background:#171717;color:#fff;padding:12px;border-radius:10px;font-weight:900;margin-top:8px}
 .chatBox{margin-top:14px;border-top:1px solid #eadb78;padding-top:12px}.chatList{max-height:230px;overflow:auto;background:#fff;border-radius:10px;padding:8px}.chatMsg{padding:7px 9px;margin:5px 0;border-radius:10px;max-width:88%;font-size:14px}.chatMsg.customer{margin-left:auto;background:#f4c400}.chatMsg.admin{margin-right:auto;background:#eee}.chatRow{display:flex;gap:7px;margin-top:8px}.chatRow input{flex:1;padding:11px;border:1px solid #ccc;border-radius:9px}.chatRow button{padding:11px 14px;border:0;border-radius:9px;background:#171717;color:#fff;font-weight:800}.messageDot{display:inline-block;min-width:18px;height:18px;padding:2px 5px;border-radius:9px;background:#b00020;color:#fff;font-size:11px;text-align:center;margin-left:5px}.
@@ -123,7 +124,126 @@ function change(i,d){cart[i].qty+=d;if(cart[i].qty<=0)cart.splice(i,1);openCart(
 function openCart(){db.auth.getSession().then(({data})=>{if(!data.session?.user){openAccountPanel();setAuthMsg("🔐 Please log in before placing an order.");return}openCartLoggedIn()});}
 function openCartLoggedIn(){const box=document.getElementById("items");if(!cart.length){box.innerHTML='<p class="empty">Cart is empty.</p>';document.getElementById("total").textContent="Total: ₹0"}else{box.innerHTML=cart.map((x,i)=>`<div class="cartline"><span>${esc(x.name)} × ${x.qty}</span><span>${money(x.price*x.qty)} <span class="qty"><button onclick="change(${i},-1)">−</button><button onclick="change(${i},1)">+</button></span></span></div>`).join("");let subtotal=cart.reduce((s,x)=>s+x.price*x.qty,0),total=subtotal+Number(deliveryCharge||0);document.getElementById("total").innerHTML="Subtotal: "+money(subtotal)+"<br>Delivery: "+money(deliveryCharge)+"<br><b>Total: "+money(total)+"</b>";updatePaymentUI()}document.getElementById("success").style.display="none";document.getElementById("modal").style.display="flex"}
 function closeCart(){document.getElementById("modal").style.display="none"}
-async function placeOrder(){if(!cart.length)return alert("Cart empty");let n=document.getElementById("name").value.trim(),p=document.getElementById("phone").value.trim(),a=document.getElementById("address").value.trim(),note=document.getElementById("note").value.trim(),pay=document.getElementById("payment").value;if(!n||!p||!a)return alert("Please fill Name, Mobile Number and Full Address.");if(pay==="Wallet"){const {data:sessionData}=await db.auth.getSession();if(!sessionData?.session?.user){openCart();closeSideMenu();openAccountPanel();return alert("Please log in to pay from your wallet.")}}let subtotal=cart.reduce((s,x)=>s+x.price*x.qty,0), total=subtotal+Number(deliveryCharge||0);let payload={cart:cart,delivery_instructions:note,payment_method:pay,delivery_charge:Number(deliveryCharge||0),upi_id:settings.upiId};let {data,error}=await db.rpc("place_order",{p_customer_name:n,p_phone:p,p_address:a,p_items:payload,p_total:total,p_subtotal:subtotal,p_delivery_charge:Number(deliveryCharge||0),p_payment_method:pay});if(error)return alert("Order could not be placed: "+error.message);let orderId=String(data||"");if(!orderId)return alert("Order placed, but the tracking ID was not returned. Please contact the hotel.");localStorage.setItem("delhi6_order_id",orderId);localStorage.setItem("delhi6_order_phone",p);let msg=`New Delhi 6 Hotel Order\nOrder ID: ${orderId}\nName: ${n}\nPhone: ${p}\nAddress: ${a}\nInstructions: ${note||"None"}\nPayment: ${pay}\nItems: ${cart.map(x=>x.name+" x"+x.qty).join(", ")}\nSubtotal: ${money(subtotal)}\nDelivery: ${money(deliveryCharge)}\nTotal: ${money(total)}`;cart=[];updateCount();document.getElementById("success").innerHTML=`✅ Order received!<br>Order ID: <b>${esc(orderId)}</b><br>Your order status and chat are available in Track My Order.`;document.getElementById("success").style.display="block";showTracker();if(pay==="Wallet"){await loadWalletBalance();await loadCheckoutWalletBalance(total);document.getElementById("payment").value="Cash on Delivery";updatePaymentUI()}if(pay==="UPI"){setTimeout(()=>window.location.href=upiLink(total),300);return}}
+async function createRazorpayOrder(localOrderId, amount){
+  const { data, error } = await db.functions.invoke("create-razorpay-order", {
+    body: { amount: Number(amount), receipt: String(localOrderId) }
+  });
+  if(error) throw new Error(error.message || "Unable to start Razorpay payment");
+  if(!data?.success || !data?.order_id || !data?.key_id) throw new Error(data?.error || "Razorpay order creation failed");
+  return data;
+}
+
+async function verifyRazorpayPayment(localOrderId, razorpayResponse){
+  const { data, error } = await db.functions.invoke("verify-razorpay-payment", {
+    body: {
+      order_id: String(localOrderId),
+      razorpay_order_id: String(razorpayResponse.razorpay_order_id || ""),
+      razorpay_payment_id: String(razorpayResponse.razorpay_payment_id || ""),
+      razorpay_signature: String(razorpayResponse.razorpay_signature || "")
+    }
+  });
+  if(error) throw new Error(error.message || "Payment verification failed");
+  if(!data?.success) throw new Error(data?.error || data?.message || "Payment verification failed");
+  return data;
+}
+
+async function payWithRazorpay(localOrderId, amount, customer){
+  if(typeof Razorpay === "undefined") throw new Error("Payment gateway is still loading. Please try again.");
+  const rp = await createRazorpayOrder(localOrderId, amount);
+
+  const { data: sessionData } = await db.auth.getSession();
+  const userEmail = sessionData?.session?.user?.email || "";
+
+  const { error: saveError } = await db.from("orders")
+    .update({ razorpay_order_id: rp.order_id })
+    .eq("id", String(localOrderId));
+  if(saveError) console.warn("Could not save Razorpay order id:", saveError.message);
+
+  return await new Promise((resolve, reject) => {
+    let finished = false;
+    const options = {
+      key: rp.key_id,
+      amount: Number(rp.amount),
+      currency: rp.currency || "INR",
+      name: "Delhi 6 Hotel",
+      description: "Delhi 6 Hotel Order",
+      order_id: rp.order_id,
+      prefill: {
+        name: customer.name,
+        contact: customer.phone,
+        email: userEmail
+      },
+      notes: { local_order_id: String(localOrderId) },
+      theme: { color: "#f4c400" },
+      handler: async function(response){
+        if(finished) return;
+        finished = true;
+        try {
+          const verified = await verifyRazorpayPayment(localOrderId, response);
+          resolve(verified);
+        } catch(e) {
+          reject(e);
+        }
+      },
+      modal: {
+        ondismiss: function(){
+          if(!finished){
+            finished = true;
+            reject(new Error("Payment was cancelled. Your order is still pending payment."));
+          }
+        }
+      }
+    };
+    const checkout = new Razorpay(options);
+    checkout.on("payment.failed", function(response){
+      if(finished) return;
+      finished = true;
+      reject(new Error(response?.error?.description || "Payment failed"));
+    });
+    checkout.open();
+  });
+}
+
+async function placeOrder(){
+  if(!cart.length)return alert("Cart empty");
+  let n=document.getElementById("name").value.trim(),p=document.getElementById("phone").value.trim(),a=document.getElementById("address").value.trim(),note=document.getElementById("note").value.trim(),pay=document.getElementById("payment").value;
+  if(!n||!p||!a)return alert("Please fill Name, Mobile Number and Full Address.");
+  const {data:sessionData}=await db.auth.getSession();
+  if(!sessionData?.session?.user){openCart();closeSideMenu();openAccountPanel();return alert("Please log in before placing an order.");}
+  if(pay==="Wallet" && !sessionData?.session?.user){openCart();closeSideMenu();openAccountPanel();return alert("Please log in to pay from your wallet.")}
+
+  let subtotal=cart.reduce((s,x)=>s+x.price*x.qty,0), total=subtotal+Number(deliveryCharge||0);
+  let payload={cart:cart,delivery_instructions:note,payment_method:pay,delivery_charge:Number(deliveryCharge||0),upi_id:settings.upiId};
+  let {data,error}=await db.rpc("place_order",{p_customer_name:n,p_phone:p,p_address:a,p_items:payload,p_total:total,p_subtotal:subtotal,p_delivery_charge:Number(deliveryCharge||0),p_payment_method:pay});
+  if(error)return alert("Order could not be placed: "+error.message);
+  let orderId=String(data||"");
+  if(!orderId)return alert("Order placed, but the tracking ID was not returned. Please contact the hotel.");
+  localStorage.setItem("delhi6_order_id",orderId);
+  localStorage.setItem("delhi6_order_phone",p);
+
+  if(pay==="UPI"){
+    try{
+      document.getElementById("success").innerHTML="⏳ Opening secure payment...";
+      document.getElementById("success").style.display="block";
+      const result=await payWithRazorpay(orderId,total,{name:n,phone:p});
+      cart=[];updateCount();
+      document.getElementById("success").innerHTML=`✅ Payment successful!<br>Order confirmed.<br>Order ID: <b>${esc(orderId)}</b><br>Payment ID: <b>${esc(result.payment_id||"")}</b><br>Your order status and chat are available in Track My Order.`;
+      document.getElementById("success").style.display="block";
+      showTracker();
+      return;
+    }catch(e){
+      document.getElementById("success").style.display="none";
+      alert(e?.message || "Payment could not be completed. Your order is still pending payment.");
+      return;
+    }
+  }
+
+  let msg=`New Delhi 6 Hotel Order\nOrder ID: ${orderId}\nName: ${n}\nPhone: ${p}\nAddress: ${a}\nInstructions: ${note||"None"}\nPayment: ${pay}\nItems: ${cart.map(x=>x.name+" x"+x.qty).join(", ")}\nSubtotal: ${money(subtotal)}\nDelivery: ${money(deliveryCharge)}\nTotal: ${money(total)}`;
+  cart=[];updateCount();
+  document.getElementById("success").innerHTML=`✅ Order received!<br>Order ID: <b>${esc(orderId)}</b><br>Your order status and chat are available in Track My Order.`;
+  document.getElementById("success").style.display="block";showTracker();
+  if(pay==="Wallet"){await loadWalletBalance();await loadCheckoutWalletBalance(total);document.getElementById("payment").value="Cash on Delivery";updatePaymentUI()}
+}
 const statusSteps=["Pending","Confirmed","Packed","Out for Delivery","Delivered"];
 function statusIndex(status){if(status==="Cancelled")return -1;let i=statusSteps.indexOf(status);return i<0?0:i}
 function updateTracker(status,total,created){const tracker=document.getElementById("tracker"),text=document.getElementById("trackerText"),cancel=document.getElementById("cancelOrderBtn"),ref=document.getElementById("orderRef");if(!tracker)return;tracker.style.display="block";let idx=statusIndex(status);document.querySelectorAll(".step").forEach((el,i)=>{el.classList.remove("active","done");if(status!=="Cancelled"&&i<idx)el.classList.add("done");if(status!=="Cancelled"&&i===idx)el.classList.add("active")});const messages={Pending:"Your order has been received.",Confirmed:"Your order has been confirmed.",Packed:"Your order is being packed.","Out for Delivery":"Your order is out for delivery.",Delivered:"Your order has been delivered.",Cancelled:"Your order has been cancelled."};text.innerHTML=`<b>${esc(messages[status]||status)}</b>${total!=null?`<br>Total: ${money(total)}`:""}`;cancel.style.display=(status==="Pending"||status==="Confirmed")?"inline-block":"none";if(status==="Cancelled")cancel.disabled=true;if(ref)ref.textContent="Order ID: "+(localStorage.getItem("delhi6_order_id")||"")+(created?" • "+new Date(created).toLocaleString("en-IN"):"")}
