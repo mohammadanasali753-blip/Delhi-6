@@ -124,27 +124,44 @@ function change(i,d){cart[i].qty+=d;if(cart[i].qty<=0)cart.splice(i,1);openCart(
 function openCart(){db.auth.getSession().then(({data})=>{if(!data.session?.user){openAccountPanel();setAuthMsg("🔐 Please log in before placing an order.");return}openCartLoggedIn()});}
 function openCartLoggedIn(){const box=document.getElementById("items");if(!cart.length){box.innerHTML='<p class="empty">Cart is empty.</p>';document.getElementById("total").textContent="Total: ₹0"}else{box.innerHTML=cart.map((x,i)=>`<div class="cartline"><span>${esc(x.name)} × ${x.qty}</span><span>${money(x.price*x.qty)} <span class="qty"><button onclick="change(${i},-1)">−</button><button onclick="change(${i},1)">+</button></span></span></div>`).join("");let subtotal=cart.reduce((s,x)=>s+x.price*x.qty,0),total=subtotal+Number(deliveryCharge||0);document.getElementById("total").innerHTML="Subtotal: "+money(subtotal)+"<br>Delivery: "+money(deliveryCharge)+"<br><b>Total: "+money(total)+"</b>";updatePaymentUI()}document.getElementById("success").style.display="none";document.getElementById("modal").style.display="flex"}
 function closeCart(){document.getElementById("modal").style.display="none"}
-async function createRazorpayOrder(localOrderId, amount){
-  const { data, error } = await db.functions.invoke("create-razorpay-order", {
-    body: { amount: Number(amount), receipt: String(localOrderId) }
+async function callDelhi6Function(name, body, requireUser=false){
+  const headers = {
+    "Content-Type": "application/json",
+    "apikey": SB_KEY
+  };
+  if(requireUser){
+    const { data: sessionData } = await db.auth.getSession();
+    const token = sessionData?.session?.access_token || "";
+    if(!token) throw new Error("Please log in again before payment verification.");
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  const response = await fetch(`${SB_URL}/functions/v1/${name}`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body)
   });
-  if(error) throw new Error(error.message || "Unable to start Razorpay payment");
-  if(!data?.success || !data?.order_id || !data?.key_id) throw new Error(data?.error || "Razorpay order creation failed");
+  let data = null;
+  try { data = await response.json(); } catch(e) {}
+  if(!response.ok){
+    throw new Error(data?.error || data?.message || `Edge Function returned HTTP ${response.status}`);
+  }
   return data;
 }
 
+async function createRazorpayOrder(localOrderId, amount){
+  return await callDelhi6Function("create-razorpay-order", {
+    amount: Number(amount),
+    receipt: String(localOrderId)
+  }, false);
+}
+
 async function verifyRazorpayPayment(localOrderId, razorpayResponse){
-  const { data, error } = await db.functions.invoke("verify-razorpay-payment", {
-    body: {
-      order_id: String(localOrderId),
-      razorpay_order_id: String(razorpayResponse.razorpay_order_id || ""),
-      razorpay_payment_id: String(razorpayResponse.razorpay_payment_id || ""),
-      razorpay_signature: String(razorpayResponse.razorpay_signature || "")
-    }
-  });
-  if(error) throw new Error(error.message || "Payment verification failed");
-  if(!data?.success) throw new Error(data?.error || data?.message || "Payment verification failed");
-  return data;
+  return await callDelhi6Function("verify-razorpay-payment", {
+    order_id: String(localOrderId),
+    razorpay_order_id: String(razorpayResponse.razorpay_order_id || ""),
+    razorpay_payment_id: String(razorpayResponse.razorpay_payment_id || ""),
+    razorpay_signature: String(razorpayResponse.razorpay_signature || "")
+  }, true);
 }
 
 async function payWithRazorpay(localOrderId, amount, customer){
