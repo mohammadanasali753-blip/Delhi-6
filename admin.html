@@ -58,8 +58,46 @@ async function loadMenu(){const r=await getDb().from('menu_items').select('*').o
 function previewProductImage(){const u=img.value.trim();if(u){productImagePreview.innerHTML=`<img src="${esc(u)}" style="width:90px;height:90px;object-fit:cover;border-radius:10px;border:1px solid #ddd" onerror="this.style.display='none'"><br><a href="${esc(u)}" target="_blank">Open image</a>`}else if(!(imgFile.files&&imgFile.files[0]))productImagePreview.innerHTML=''}
 function previewProductImageFile(){const f=(imgFile.files&&imgFile.files[0])||(imgGallery.files&&imgGallery.files[0]);if(!f)return;const u=URL.createObjectURL(f);productImagePreview.innerHTML=`<img src="${u}" style="width:120px;height:120px;object-fit:cover;border-radius:12px;border:1px solid #ddd"><div style="margin-top:5px">${esc(f.name)}</div>`}
 function previewProductImageGallery(){previewProductImageFile()}
-function compressImage(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>{const im=new Image();im.onload=()=>{const max=1200;let w=im.width,h=im.height;if(w>max||h>max){const sc=Math.min(max/w,max/h);w=Math.round(w*sc);h=Math.round(h*sc)}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(im,0,0,w,h);c.toBlob(b=>b?resolve(b):reject(Error('Image conversion failed')),'image/jpeg',0.82)};im.onerror=reject;im.src=reader.result};reader.onerror=reject;reader.readAsDataURL(file)})}
-async function uploadImage(file,folder){const blob=await compressImage(file);const path=folder+'/'+Date.now()+'-'+Math.random().toString(36).slice(2)+'.jpg';const r=await getDb().storage.from('delhi6-images').upload(path,blob,{contentType:'image/jpeg',upsert:false});if(r.error)throw r.error;return getDb().storage.from('delhi6-images').getPublicUrl(r.data.path).data.publicUrl}
+async function compressImage(file){
+  if(!file) throw new Error('No image selected');
+  try{
+    if(!file.type || !file.type.startsWith('image/')) return file;
+    const dataUrl=await new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=()=>resolve(reader.result);
+      reader.onerror=()=>reject(new Error('Photo could not be read on this device'));
+      reader.readAsDataURL(file);
+    });
+    const im=await new Promise((resolve,reject)=>{
+      const img=new Image();
+      img.onload=()=>resolve(img);
+      img.onerror=()=>reject(new Error('Photo format could not be decoded'));
+      img.src=dataUrl;
+    });
+    const max=1200;
+    let w=im.width,h=im.height;
+    if(w>max||h>max){const sc=Math.min(max/w,max/h);w=Math.round(w*sc);h=Math.round(h*sc)}
+    const c=document.createElement('canvas'); c.width=w; c.height=h;
+    const ctx=c.getContext('2d');
+    if(!ctx) return file;
+    ctx.drawImage(im,0,0,w,h);
+    const blob=await new Promise(resolve=>c.toBlob(resolve,'image/jpeg',0.82));
+    return blob || file;
+  }catch(err){
+    // Some Android gallery photos cannot be decoded by canvas. Upload the original instead.
+    return file;
+  }
+}
+async function uploadImage(file,folder){
+  const blob=await compressImage(file);
+  const isJpeg=blob.type==='image/jpeg';
+  const ext=isJpeg?'jpg':((file.name||'image.jpg').split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
+  const contentType=blob.type || file.type || 'application/octet-stream';
+  const path=folder+'/'+Date.now()+'-'+Math.random().toString(36).slice(2)+'.'+ext;
+  const r=await getDb().storage.from('delhi6-images').upload(path,blob,{contentType,upsert:false});
+  if(r.error)throw new Error(r.error.message||'Storage upload failed');
+  return getDb().storage.from('delhi6-images').getPublicUrl(r.data.path).data.publicUrl;
+}
 async function uploadProductImage(file){return uploadImage(file,'products')}
 async function addItem(){if(!n.value.trim()||!p.value)return alert('Name and price are required.');let imageUrl=img.value.trim();const f=(imgFile.files&&imgFile.files[0])||(imgGallery.files&&imgGallery.files[0]);if(f){try{productImagePreview.innerHTML='<small>Uploading image...</small>';imageUrl=await uploadProductImage(f);img.value=imageUrl;productImagePreview.innerHTML='<img src="'+esc(imageUrl)+'" style="width:120px;height:120px;object-fit:cover;border-radius:12px;border:1px solid #ddd"><div style="margin-top:5px">Uploaded successfully</div>'}catch(e){return alert('Image upload failed: '+(e.message||e))}}const r=await getDb().from('menu_items').insert({name:n.value.trim(),price:Number(p.value),image_url:imageUrl,description:desc.value.trim(),available:true});if(r.error)alert(r.error.message);else{n.value='';p.value='';img.value='';imgFile.value='';productImagePreview.innerHTML='';desc.value='';loadMenu()}}
 async function editItem(id,k,v){const o={};o[k]=k==='price'?Number(v):v;const r=await getDb().from('menu_items').update(o).eq('id',id);if(r.error)alert(r.error.message)}async function toggleItem(id,current){const r=await getDb().from('menu_items').update({available:!current}).eq('id',id);if(r.error)alert(r.error.message);else loadMenu()}async function deleteItem(id){if(!confirm('Delete this menu item?'))return;const r=await getDb().from('menu_items').delete().eq('id',id);if(r.error)alert(r.error.message);else loadMenu()}
