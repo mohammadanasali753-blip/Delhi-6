@@ -68,7 +68,7 @@ async function loadMenu(){const r=await getDb().from('menu_items').select('*').o
 function previewProductImage(){const u=img.value.trim();if(u){productImagePreview.innerHTML=`<img src="${esc(u)}" style="width:90px;height:90px;object-fit:cover;border-radius:10px;border:1px solid #ddd" onerror="this.style.display='none'"><br><a href="${esc(u)}" target="_blank">Open image</a>`}else if(!(imgFile.files&&imgFile.files[0]))productImagePreview.innerHTML=''}
 function previewProductImageFile(){const f=(imgFile.files&&imgFile.files[0])||(imgGallery.files&&imgGallery.files[0]);if(!f)return;const u=URL.createObjectURL(f);productImagePreview.innerHTML=`<img src="${u}" style="width:120px;height:120px;object-fit:cover;border-radius:12px;border:1px solid #ddd"><div style="margin-top:5px">${esc(f.name)}</div>`}
 function previewProductImageGallery(){previewProductImageFile()}
-async async function compressImage(file){
+async function compressImage(file){
 try{
 return await new Promise((resolve,reject)=>{
 const reader=new FileReader();
