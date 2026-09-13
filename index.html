@@ -1,75 +1,739 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Delhi 6 Hotel | Order Online</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#fffaf0;color:#171717}.nav{background:#f4c400;padding:14px 6%;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:5}.brand{font-weight:900;font-size:23px}.btn{border:0;border-radius:24px;padding:11px 18px;font-weight:800;cursor:pointer;background:#171717;color:#fff}.hero{padding:55px 6%;text-align:center;background:linear-gradient(135deg,#ffe86a,#f4c400)}h1{font-size:44px;margin:0 0 10px}.hero p{font-size:18px}.wrap{max-width:1100px;margin:auto;padding:32px 6%}.title{text-align:center}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px}.card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px #0002}.card img{width:100%;height:180px;object-fit:cover;background:#eee}.body{padding:16px}.price{font-weight:900;font-size:21px;margin:10px 0}.add{width:100%;padding:12px;border:0;border-radius:10px;background:#f4c400;font-weight:900;cursor:pointer}.contact{background:#171717;color:white;text-align:center;padding:35px 6%}.map,.wa{display:inline-block;background:#f4c400;color:#111;text-decoration:none;padding:12px 20px;border-radius:24px;font-weight:800;margin:7px}.wa{background:#25d366;color:#fff}.modal{display:none;position:fixed;inset:0;background:#0009;z-index:20;align-items:center;justify-content:center}.box{background:white;border-radius:16px;padding:22px;width:min(520px,94%);max-height:92vh;overflow:auto}.close{float:right;background:none;border:0;font-size:27px}.box input,.box textarea,.box select{width:100%;padding:12px;margin:7px 0 11px;border:1px solid #ccc;border-radius:9px;font-size:15px}.box textarea{min-height:75px}.order{width:100%;padding:14px;border:0;background:#f4c400;border-radius:10px;font-weight:900;margin-top:8px;font-size:16px}.cartline{display:flex;justify-content:space-between;border-bottom:1px solid #ddd;padding:8px 0}.qty button{border:0;background:#171717;color:#fff;border-radius:5px;padding:4px 9px;margin:0 3px}.success{display:none;background:#eaffea;padding:14px;border-radius:10px;margin-top:12px}.muted{color:#666}.empty{text-align:center;padding:25px}.err{color:#b00020;text-align:center;padding:20px}.tracker{margin-top:16px;padding:16px;border-radius:14px;background:#fff8d6;border:1px solid #eadb78}.steps{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin:14px 0}.step{text-align:center;font-size:12px;font-weight:800;color:#777}.dot{width:28px;height:28px;border-radius:50%;margin:0 auto 5px;background:#ddd;display:flex;align-items:center;justify-content:center}.step.active{color:#111}.step.active .dot{background:#f4c400;color:#111}.step.done .dot{background:#171717;color:#fff}.cancelBtn{background:#b00020;color:#fff;border:0;padding:10px 14px;border-radius:9px;font-weight:900;cursor:pointer}.orderRef{font-size:12px;color:#666;word-break:break-all}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#fffaf0;color:#171717}
+.nav{background:#f4c400;padding:14px 6%;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:5}
+.brand{font-weight:900;font-size:23px}
+.btn{border:0;border-radius:24px;padding:11px 18px;font-weight:800;cursor:pointer;background:#171717;color:#fff}
+.hero{padding:55px 6%;text-align:center;background:#f4c400}
+h1{font-size:44px;margin:0 0 10px}
+.hero p{font-size:18px}
+.wrap{max-width:1100px;margin:auto;padding:32px 6%}
+.title{text-align:center}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px}
+.card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px #0002}
+.card img{width:100%;height:180px;object-fit:cover;background:#eee}
+.body{padding:16px}
+.price{font-weight:900;font-size:21px;margin:10px 0}
+.add{width:100%;padding:12px;border:0;border-radius:10px;background:#f4c400;font-weight:900;cursor:pointer}
+.contact{background:#171717;color:white;text-align:center;padding:35px 6%}
+.map,.wa{display:inline-block;background:#f4c400;color:#111;text-decoration:none;padding:12px 20px;border-radius:24px;font-weight:800;margin:7px}
+.wa{background:#25d366;color:#fff}
+.modal{display:none;position:fixed;inset:0;background:#0009;z-index:20;align-items:center;justify-content:center}
+.box{background:white;border-radius:16px;padding:22px;width:min(520px,94%);max-height:92vh;overflow:auto}
+.close{float:right;background:none;border:0;font-size:27px}
+.box input,.box textarea,.box select{width:100%;padding:12px;margin:7px 0 11px;border:1px solid #ccc;border-radius:9px;font-size:15px}
+.box textarea{min-height:75px}
+.order{width:100%;padding:14px;border:0;background:#f4c400;border-radius:10px;font-weight:900;margin-top:8px;font-size:16px}
+.cartline{display:flex;justify-content:space-between;border-bottom:1px solid #ddd;padding:8px 0}
+.qty button{border:0;background:#171717;color:#fff;border-radius:5px;padding:4px 9px;margin:0 3px}
+.success{display:none;background:#eaffea;padding:14px;border-radius:10px;margin-top:12px}
+.muted{color:#666}
+.empty{text-align:center;padding:25px}
+.tracker{margin-top:16px;padding:16px;border-radius:14px;background:#fff8d6;border:1px solid #eadb78}
+.steps{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin:14px 0}
+.step{text-align:center;font-size:12px;font-weight:800;color:#777}
+.dot{width:28px;height:28px;border-radius:50%;margin:0 auto 5px;background:#ddd;display:flex;align-items:center;justify-content:center}
+.step.active{color:#111}
+.step.active .dot{background:#f4c400;color:#111}
+.step.done .dot{background:#171717;color:#fff}
+.cancelBtn{background:#b00020;color:#fff;border:0;padding:10px 14px;border-radius:9px;font-weight:900;cursor:pointer}
+.orderRef{font-size:12px;color:#666;word-break:break-all}
+.authbar{margin:16px auto 0;max-width:1100px;padding:0 6%}
+.authbox{background:#fff;border-radius:14px;padding:14px;box-shadow:0 3px 12px #0001}
+.authrow{display:flex;gap:8px;flex-wrap:wrap}
+.authrow input{flex:1;min-width:180px;padding:11px;border:1px solid #ccc;border-radius:9px}
+.google{background:#fff;border:1px solid #bbb;color:#111}
+.upiBox{display:none;background:#fff8d6;border:1px solid #eadb78;padding:12px;border-radius:10px;margin-top:8px}
+.upiQr{display:block;max-width:220px;width:100%;margin:10px auto;border-radius:10px}
+.payUpi{display:block;text-align:center;text-decoration:none;background:#171717;color:#fff;padding:12px;border-radius:10px;font-weight:900;margin-top:8px}
 </style>
 
-<style id="siteCustomStyle">
+<style>
 :root{--primary:#f4c400;--dark:#171717}
-.nav{background:var(--primary)!important}.hero{background:linear-gradient(135deg,var(--primary),var(--primary))!important}.add{background:var(--primary)!important}.map{background:var(--primary)!important}.contact{background:var(--dark)!important}.btn{background:var(--dark)!important}
+.nav{background:var(--primary)!important}
+.hero{background:var(--primary)!important}
+.add{background:var(--primary)!important}
+.map{background:var(--primary)!important}
+.contact{background:var(--dark)!important}
+.btn{background:var(--dark)!important}
 </style>
 </head>
-<body>
-<div class="nav"><div id="brand" class="brand">🍗 Delhi 6 Hotel</div><button class="btn" onclick="openCart()">🛒 Cart (<span id="count">0</span>)</button></div>
-<section class="hero"><h1 id="heroTitle">Delhi 6 Hotel</h1><p id="heroSub">Fresh • Hot • Delicious Biryani</p><a class="wa" href="https://wa.me/918750794831" target="_blank">WhatsApp</a></section><section id="tracker" class="wrap" style="display:none;padding-bottom:0"><div class="tracker"><h3 style="margin:0 0 6px">📦 Your Order</h3><div id="trackerText">Checking order status...</div><div class="steps"><div class="step" data-step="Pending"><div class="dot">1</div>Order received</div><div class="step" data-step="Confirmed"><div class="dot">2</div>Confirmed</div><div class="step" data-step="Packed"><div class="dot">3</div>Packed</div><div class="step" data-step="Out for Delivery"><div class="dot">4</div>Out for delivery</div><div class="step" data-step="Delivered"><div class="dot">5</div>Delivered</div></div><button id="cancelOrderBtn" class="cancelBtn" onclick="cancelMyOrder()">Cancel Order</button><div id="orderRef" class="orderRef"></div></div></section>
-<main class="wrap"><h2 id="menuTitle" class="title">Our Menu</h2><div id="menu" class="grid"><p class="empty">Loading menu...</p></div></main>
-<section class="contact"><h2 id="contactTitle">Visit Us</h2><p id="addressText">Indra Park C12, Pali Factory, Uttam Nagar, New Delhi</p><p>📞 <span id="phoneText">+91 8750794831</span></p><a id="map" class="map" target="_blank" href="https://www.google.com/maps/search/?api=1&query=Indra+Park+C12+Pali+Factory+Uttam+Nagar+New+Delhi">📍 Google Maps</a><a class="wa" href="https://wa.me/918750794831" target="_blank">Order on WhatsApp</a></section>
-<footer style="text-align:center;padding:20px">© Delhi 6 Hotel</footer>
-<div id="modal" class="modal"><div class="box"><button class="close" onclick="closeCart()">×</button><h2>🛒 Your Order</h2><div id="items"></div><hr><div id="total" style="font-size:20px;font-weight:900">Total: ₹0</div><h3>Delivery Details</h3><input id="name" required placeholder="Your Name"><input id="phone" required type="tel" placeholder="Mobile Number"><textarea id="address" required placeholder="Full Delivery Address"></textarea><textarea id="note" placeholder="Delivery instructions (optional)"></textarea><select id="payment"><option value="Cash on Delivery">Cash on Delivery</option><option value="UPI">UPI</option></select><button class="order" onclick="placeOrder()">📲 Place Order</button><div id="success" class="success"></div></div></div>
-<script>
-const SB_URL="https://qxktximeddpttcjkaumo.supabase.co";
-const SB_KEY="sb_publishable_mUL6OaOwJ649Xi68uQOcLw_9g0fM8mM";
-const db=supabase.createClient(SB_URL,SB_KEY);let menu=[],cart=[];
-const fallback=[{name:"Chicken Biryani",price:180,description:"Aromatic chicken biryani",image_url:""},{name:"Mutton Biryani",price:260,description:"Rich mutton biryani",image_url:""},{name:"Egg Biryani",price:130,description:"Tasty egg biryani",image_url:""},{name:"Veg Biryani",price:120,description:"Fragrant veg biryani",image_url:""}];
-function esc(v){return String(v??"").replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))}
-function money(n){return "₹"+Number(n||0).toLocaleString("en-IN")}
 
-async function loadSiteSettings(){
-  try{
-    let {data,error}=await db.from("site_settings").select("map_url").eq("id",1).maybeSingle();
-    if(error||!data?.map_url)return;
-    let raw=data.map_url, cfg=null;
-    try{if(raw.trim().startsWith("{"))cfg=JSON.parse(raw)}catch(e){}
-    if(!cfg)return;
-    const root=document.documentElement;
-    root.style.setProperty("--primary",cfg.primary||"#f4c400");
-    root.style.setProperty("--dark",cfg.dark||"#171717");
-    const brand=document.getElementById("brand"),heroTitle=document.getElementById("heroTitle"),heroSub=document.getElementById("heroSub"),menuTitle=document.getElementById("menuTitle"),contactTitle=document.getElementById("contactTitle"),addressText=document.getElementById("addressText"),phoneText=document.getElementById("phoneText");
-    if(brand)brand.textContent="🍗 "+(cfg.brand||"Delhi 6 Hotel");
-    if(heroTitle)heroTitle.textContent=cfg.heroTitle||cfg.brand||"Delhi 6 Hotel";
-    if(heroSub)heroSub.textContent=cfg.heroSub||"Fresh • Hot • Delicious Biryani";
-    if(menuTitle)menuTitle.textContent=cfg.menuTitle||"Our Menu";
-    if(contactTitle)contactTitle.textContent=cfg.contactTitle||"Visit Us";
-    if(addressText)addressText.textContent=cfg.address||"";
-    if(phoneText)phoneText.textContent=cfg.phone||"";
-    const wa=(cfg.wa||"").replace(/\D/g,"");
-    document.querySelectorAll(".wa").forEach(x=>{if(wa)x.href="https://wa.me/"+wa});
-    const map=document.getElementById("map");
-    if(map&&cfg.mapUrl)map.href=cfg.mapUrl;
-    document.title=(cfg.brand||"Delhi 6 Hotel")+" | Order Online";
-  }catch(e){}
+<body>
+
+<div class="nav">
+<div id="brand" class="brand">🍗 Delhi 6 Hotel</div>
+<button class="btn" onclick="openCart()">🛒 Cart (<span id="count">0</span>)</button>
+</div>
+
+<div class="authbar">
+<div class="authbox">
+<b>👤 Customer Account</b>
+
+<div id="authLoggedOut" class="authrow" style="margin-top:9px">
+<input id="authEmail" type="email" placeholder="Email address">
+<input id="authPassword" type="password" placeholder="Password">
+<button class="btn" onclick="emailLogin()">Login</button>
+<button class="btn" onclick="emailSignup()">Create Account</button>
+<button class="btn google" onclick="googleLogin()">🌐 Continue with Google</button>
+</div>
+
+<div id="authLoggedIn" style="display:none;margin-top:9px">
+<span id="authUserText"></span>
+<button class="btn" onclick="loadMyOrders()">📦 My Orders</button>
+<button class="btn" onclick="logoutCustomer()">Logout</button>
+</div>
+
+<div id="authMsg" class="muted" style="margin-top:7px"></div>
+</div>
+</div>
+
+<div id="myOrders" class="authbar" style="display:none">
+<div class="authbox">
+<b>📦 My Orders</b>
+<div id="myOrdersList" class="muted" style="margin-top:8px"></div>
+</div>
+</div>
+
+<section class="hero">
+<h1 id="heroTitle">Delhi 6 Hotel</h1>
+<p id="heroSub">Fresh • Hot • Delicious Biryani</p>
+<a class="wa" href="https://wa.me/918750794831" target="_blank">WhatsApp</a>
+</section>
+
+<section id="tracker" class="wrap" style="display:none;padding-bottom:0">
+<div class="tracker">
+
+<h3 style="margin:0 0 6px">📦 Your Order</h3>
+
+<div id="trackerText">Checking order status...</div>
+
+<div class="steps">
+
+<div class="step" data-step="Pending">
+<div class="dot">1</div>
+Order received
+</div>
+
+<div class="step" data-step="Confirmed">
+<div class="dot">2</div>
+Confirmed
+</div>
+
+<div class="step" data-step="Packed">
+<div class="dot">3</div>
+Packed
+</div>
+
+<div class="step" data-step="Out for Delivery">
+<div class="dot">4</div>
+Out for delivery
+</div>
+
+<div class="step" data-step="Delivered">
+<div class="dot">5</div>
+Delivered
+</div>
+
+</div>
+
+<button id="cancelOrderBtn" class="cancelBtn" onclick="cancelMyOrder()">Cancel Order</button>
+
+<div id="orderRef" class="orderRef"></div>
+
+</div>
+</section>
+
+<main class="wrap">
+
+<h2 id="menuTitle" class="title">Our Menu</h2>
+
+<div id="menu" class="grid">
+<p class="empty">Menu is ready.</p>
+</div>
+
+</main>
+
+<section class="contact">
+
+<h2 id="contactTitle">Visit Us</h2>
+
+<p id="addressText">
+Indra Park C12, Pali Factory, Uttam Nagar, New Delhi
+</p>
+
+<p>📞 <span id="phoneText">+91 8750794831</span></p>
+
+<a id="map" class="map" target="_blank"
+href="https://www.google.com/maps/search/?api=1&query=Indra+Park+C12+Pali+Factory+Uttam+Nagar+New+Delhi">
+📍 Google Maps
+</a>
+
+<a class="wa" href="https://wa.me/918750794831" target="_blank">
+Order on WhatsApp
+</a>
+
+</section>
+
+<footer style="text-align:center;padding:20px">
+© Delhi 6 Hotel
+</footer>
+
+<div id="modal" class="modal">
+
+<div class="box">
+
+<button class="close" onclick="closeCart()">×</button>
+
+<h2>🛒 Your Order</h2>
+
+<div id="items"></div>
+
+<hr>
+
+<div id="total" style="font-size:20px;font-weight:900">
+Total: ₹0
+</div>
+
+<h3>Delivery Details</h3>
+
+<input id="name" required placeholder="Your Name">
+
+<input id="phone" required type="tel" placeholder="Mobile Number">
+
+<textarea id="address" required placeholder="Full Delivery Address"></textarea>
+
+<textarea id="note" placeholder="Delivery instructions (optional)"></textarea>
+
+<select id="payment" onchange="updatePaymentUI()">
+<option value="Cash on Delivery">Cash on Delivery</option>
+<option value="UPI">UPI / QR Online Payment</option>
+</select>
+
+<div id="upiBox" class="upiBox">
+
+<b>💳 Online UPI Payment</b>
+
+<div id="upiAmount" style="margin-top:5px;font-weight:900"></div>
+
+<img id="upiQr" class="upiQr" style="display:none" alt="Delhi 6 UPI QR">
+
+<a id="upiPay" class="payUpi" href="#">
+📲 Pay Online in UPI App
+</a>
+
+<div class="muted" style="font-size:12px;margin-top:7px">
+UPI app khulne par amount verify karke UPI PIN daal kar payment karein.
+</div>
+
+</div>
+
+<button class="order" onclick="placeOrder()">
+📲 Place Order
+</button>
+
+<div id="success" class="success"></div>
+
+</div>
+</div>
+
+<script>
+
+const SB_URL="https://qxktximeddpttcjkaumo.supabase.co";
+
+const SB_KEY="sb_publishable_mUL6OaOwJ649Xi68uQOcLw_9g0fM8mM";
+
+const db=supabase.createClient(SB_URL,SB_KEY);
+
+let menu=[];
+let cart=[];
+let deliveryCharge=0;
+
+let settings={
+upiId:"8750794831@ptsbi",
+upiQrUrl:""
+};
+
+const fallback=[
+{
+name:"Chicken Biryani",
+price:180,
+description:"Aromatic chicken biryani",
+image_url:""
+},
+{
+name:"Mutton Biryani",
+price:260,
+description:"Rich mutton biryani",
+image_url:""
+},
+{
+name:"Egg Biryani",
+price:130,
+description:"Tasty egg biryani",
+image_url:""
+},
+{
+name:"Veg Biryani",
+price:120,
+description:"Fragrant veg biryani",
+image_url:""
+}
+];
+
+function esc(v){
+return String(v??"").replace(/[&<>\"']/g,c=>({
+'&':'&amp;',
+'<':'&lt;',
+'>':'&gt;',
+'\"':'&quot;',
+"'":'&#39;'
+}[c]))
 }
 
-async function load(){try{let {data,error}=await db.from("menu_items").select("*").eq("available",true).order("created_at");if(error)throw error;menu=data||[];if(!menu.length)menu=fallback;render()}catch(e){menu=fallback;render()}}
-function render(){const el=document.getElementById("menu");if(!menu.length){el.innerHTML='<p class="empty">Menu is currently unavailable.</p>';return}el.innerHTML=menu.map((x,i)=>`<div class="card"><img src="${esc(x.image_url||'https://placehold.co/600x400/f4c400/111?text=Delhi+6+Biryani')}" onerror="this.src='https://placehold.co/600x400/f4c400/111?text=Delhi+6+Biryani'"><div class="body"><h3>${esc(x.name)}</h3><p class="muted">${esc(x.description||"")}</p><div class="price">${money(x.price)}</div><button class="add" onclick="add(${i})">Add to Cart</button></div></div>`).join("")}
-function add(i){const p=menu[i];let q=cart.find(x=>x.id===p.id);if(q)q.qty++;else cart.push({id:p.id,name:p.name,price:Number(p.price),qty:1});updateCount();openCart()}
-function updateCount(){document.getElementById("count").textContent=cart.reduce((s,x)=>s+x.qty,0)}
-function change(i,d){cart[i].qty+=d;if(cart[i].qty<=0)cart.splice(i,1);openCart();updateCount()}
-function openCart(){const box=document.getElementById("items");if(!cart.length){box.innerHTML='<p class="empty">Cart is empty.</p>';document.getElementById("total").textContent="Total: ₹0"}else{box.innerHTML=cart.map((x,i)=>`<div class="cartline"><span>${esc(x.name)} × ${x.qty}</span><span>${money(x.price*x.qty)} <span class="qty"><button onclick="change(${i},-1)">−</button><button onclick="change(${i},1)">+</button></span></span></div>`).join("");document.getElementById("total").textContent="Total: "+money(cart.reduce((s,x)=>s+x.price*x.qty,0))}document.getElementById("success").style.display="none";document.getElementById("modal").style.display="flex"}
-function closeCart(){document.getElementById("modal").style.display="none"}
-async function placeOrder(){if(!cart.length)return alert("Cart empty");let n=document.getElementById("name").value.trim(),p=document.getElementById("phone").value.trim(),a=document.getElementById("address").value.trim(),note=document.getElementById("note").value.trim(),pay=document.getElementById("payment").value;if(!n||!p||!a)return alert("Please fill Name, Mobile Number and Full Address.");let total=cart.reduce((s,x)=>s+x.price*x.qty,0);let payload={cart:cart,delivery_instructions:note,payment_method:pay};let {data,error}=await db.rpc("place_order",{p_customer_name:n,p_phone:p,p_address:a,p_items:payload,p_total:total});if(error)return alert("Order could not be placed: "+error.message);let orderId=String(data||"");if(!orderId)return alert("Order placed, but order tracking ID was not returned. Please contact the hotel.");localStorage.setItem("delhi6_order_id",orderId);localStorage.setItem("delhi6_order_phone",p);let msg=`New Delhi 6 Hotel Order\nOrder ID: ${orderId}\nName: ${n}\nPhone: ${p}\nAddress: ${a}\nInstructions: ${note||"None"}\nPayment: ${pay}\nItems: ${cart.map(x=>x.name+" x"+x.qty).join(", ")}\nTotal: ${money(total)}`;cart=[];updateCount();document.getElementById("success").innerHTML=`✅ Order received!<br>Order ID: <b>${esc(orderId)}</b><br>Your order status will appear on this page.`;document.getElementById("success").style.display="block";showTracker();setTimeout(()=>location.href="https://wa.me/918750794831?text="+encodeURIComponent(msg),700)}
-const statusSteps=["Pending","Confirmed","Packed","Out for Delivery","Delivered"];
-function statusIndex(status){if(status==="Cancelled")return -1;let i=statusSteps.indexOf(status);return i<0?0:i}
-function updateTracker(status,total,created){const tracker=document.getElementById("tracker"),text=document.getElementById("trackerText"),cancel=document.getElementById("cancelOrderBtn"),ref=document.getElementById("orderRef");if(!tracker)return;tracker.style.display="block";let idx=statusIndex(status);document.querySelectorAll(".step").forEach((el,i)=>{el.classList.remove("active","done");if(status!=="Cancelled"&&i<idx)el.classList.add("done");if(status!=="Cancelled"&&i===idx)el.classList.add("active")});const messages={Pending:"Tumhara order mil gaya hai.",Confirmed:"Tumhara order confirm ho gaya hai.",Packed:"Tumhara order pack ho raha hai.","Out for Delivery":"Tumhara order nikal gaya hai.",Delivered:"Tumhara order deliver ho gaya hai.",Cancelled:"Tumhara order cancel ho gaya hai."};text.innerHTML=`<b>${esc(messages[status]||status)}</b>${total!=null?`<br>Total: ${money(total)}`:""}`;cancel.style.display=(status==="Pending"||status==="Confirmed")?"inline-block":"none";if(status==="Cancelled")cancel.disabled=true;if(ref)ref.textContent="Order ID: "+(localStorage.getItem("delhi6_order_id")||"")+(created?" • "+new Date(created).toLocaleString("en-IN"):"")}
-async function showTracker(){const id=localStorage.getItem("delhi6_order_id"),phone=localStorage.getItem("delhi6_order_phone");if(!id||!phone)return;document.getElementById("tracker").style.display="block";try{let {data,error}=await db.rpc("get_order_status",{p_order_id:id,p_phone:phone});if(error)throw error;let row=Array.isArray(data)?data[0]:data;if(!row){document.getElementById("trackerText").textContent="Order status not found. Please contact the hotel.";return}updateTracker(row.status||"Pending",row.total,row.created_at)}catch(e){document.getElementById("trackerText").textContent="Order tracking is temporarily unavailable. Please refresh later."}}
-async function cancelMyOrder(){const id=localStorage.getItem("delhi6_order_id"),phone=localStorage.getItem("delhi6_order_phone");if(!id||!phone)return;if(!confirm("Order cancel karna hai?"))return;let {data,error}=await db.rpc("cancel_order",{p_order_id:id,p_phone:phone});if(error)return alert("Cancel nahi hua: "+error.message);let status=Array.isArray(data)?data[0]?.status:data;if(status==="Cancelled"){updateTracker("Cancelled");alert("Order cancel ho gaya.")}else{updateTracker(status||"Pending");alert("Ab ye order cancel nahi ho sakta kyunki packing/delivery process start ho chuka hai.")}}
-setInterval(showTracker,10000);
+function money(n){
+return "₹"+Number(n||0).toLocaleString("en-IN")
+}
 
-loadSiteSettings();
-load();
-showTracker();
-</script></body></html>
+
+/* CUSTOMER ACCOUNT */
+
+async function loadMyOrders(){
+
+const box=document.getElementById("myOrders");
+const list=document.getElementById("myOrdersList");
+
+if(!box||!list)return;
+
+box.style.display="block";
+
+const {data,error}=await db.rpc("get_my_orders");
+
+if(error){
+
+list.textContent="Orders load nahi ho pa rahe: "+error.message;
+
+return;
+
+}
+
+list.innerHTML=(data||[]).map(o=>`
+
+<div style="border-top:1px solid #ddd;padding:10px 0">
+
+<b>Order ${esc(o.id)}</b> • ${esc(o.status)}
+
+<br>
+
+${new Date(o.created_at).toLocaleString("en-IN")}
+
+• ${money(o.total)}
+
+<br>
+
+${(o.cart||[]).map(x=>
+esc(x.name)+" × "+(x.qty||1)
+).join(", ")}
+
+</div>
+
+`).join("")||"Abhi koi order nahi hai.";
+
+}
+
+
+async function googleLogin(){
+
+const {error}=await db.auth.signInWithOAuth({
+
+provider:"google",
+
+options:{
+redirectTo:location.origin+location.pathname
+}
+
+});
+
+if(error)
+document.getElementById("authMsg").textContent=error.message;
+
+}
+
+
+async function emailLogin(){
+
+const e=document.getElementById("authEmail").value.trim();
+
+const pw=document.getElementById("authPassword").value;
+
+if(!e||!pw)
+return setAuthMsg("Email aur password bharna zaroori hai.");
+
+const {error}=await db.auth.signInWithPassword({
+email:e,
+password:pw
+});
+
+setAuthMsg(error?error.message:"Login successful.");
+
+}
+
+
+async function emailSignup(){
+
+const e=document.getElementById("authEmail").value.trim();
+
+const pw=document.getElementById("authPassword").value;
+
+if(!e||!pw)
+return setAuthMsg("Email aur password bharna zaroori hai.");
+
+if(pw.length<6)
+return setAuthMsg("Password kam se kam 6 characters ka rakhein.");
+
+const {data,error}=await db.auth.signUp({
+email:e,
+password:pw
+});
+
+setAuthMsg(
+error
+?error.message
+:(data.session
+?"Account created aur login ho gaya."
+:"Account created. Email verification ke baad login karein.")
+);
+
+}
+
+
+async function logoutCustomer(){
+
+await db.auth.signOut();
+
+}
+
+
+function setAuthMsg(x){
+
+const el=document.getElementById("authMsg");
+
+if(el)el.textContent=x||"";
+
+}
+
+
+function showAuth(user){
+
+const box=document.getElementById("myOrders");
+
+if(!user&&box)
+box.style.display="none";
+
+const out=document.getElementById("authLoggedOut");
+
+const inn=document.getElementById("authLoggedIn");
+
+const txt=document.getElementById("authUserText");
+
+if(user){
+
+out.style.display="none";
+
+inn.style.display="block";
+
+txt.textContent=
+"Logged in: "+(user.email||"Google account");
+
+if(user.email)
+document.getElementById("authEmail").value=user.email;
+
+loadMyOrders();
+
+}else{
+
+out.style.display="flex";
+
+inn.style.display="none";
+
+}
+
+}
+
+
+db.auth.onAuthStateChange(
+(event,session)=>
+showAuth(session?.user||null)
+);
+
+
+async function initCustomerAuth(){
+
+const {data}=await db.auth.getSession();
+
+showAuth(data.session?.user||null);
+
+}
+
+
+/* PAYMENT */
+
+function finalTotal(){
+
+return cart.reduce(
+(s,x)=>s+x.price*x.qty,
+0
+)+Number(deliveryCharge||0);
+
+}
+
+
+function upiLink(amount){
+
+return "upi://pay?pa="+
+encodeURIComponent(settings.upiId)+
+"&pn="+
+encodeURIComponent("Delhi 6 Hotel")+
+"&am="+
+encodeURIComponent(Number(amount).toFixed(2))+
+"&cu=INR"+
+"&tr="+
+encodeURIComponent("DELHI6"+Date.now());
+
+}
+
+
+function updatePaymentUI(){
+
+const is=
+document.getElementById("payment").value==="UPI";
+
+const box=document.getElementById("upiBox");
+
+const amt=document.getElementById("upiAmount");
+
+const qr=document.getElementById("upiQr");
+
+const pay=document.getElementById("upiPay");
+
+if(!box)return;
+
+box.style.display=is?"block":"none";
+
+if(is){
+
+const t=finalTotal();
+
+amt.textContent=
+"Payable amount: "+money(t);
+
+pay.href=upiLink(t);
+
+if(settings.upiQrUrl){
+
+qr.src=settings.upiQrUrl;
+
+qr.style.display="block";
+
+qr.onerror=()=>{
+qr.style.display="none";
+};
+
+}else{
+
+qr.style.display="none";
+
+}
+
+}
+
+}
+
+
+/* WEBSITE SETTINGS */
+
+async function loadSiteSettings(){
+
+try{
+
+let {data,error}=await db
+.from("site_settings")
+.select("map_url")
+.eq("id",1)
+.maybeSingle();
+
+if(error||!data?.map_url)return;
+
+let raw=data.map_url;
+
+let cfg=null;
+
+try{
+
+if(raw.trim().startsWith("{"))
+cfg=JSON.parse(raw);
+
+}catch(e){}
+
+if(!cfg)return;
+
+settings={
+...settings,
+...cfg
+};
+
+deliveryCharge=
+Number(cfg.deliveryCharge||0);
+
+const root=
+document.documentElement;
+
+root.style.setProperty(
+"--primary",
+cfg.primary||"#f4c400"
+);
+
+root.style.setProperty(
+"--dark",
+cfg.dark||"#171717"
+);
+
+const brand=
+document.getElementById("brand");
+
+const heroTitle=
+document.getElementById("heroTitle");
+
+const heroSub=
+document.getElementById("heroSub");
+
+const menuTitle=
+document.getElementById("menuTitle");
+
+const contactTitle=
+document.getElementById("contactTitle");
+
+const addressText=
+document.getElementById("addressText");
+
+const phoneText=
+document.getElementById("phoneText");
+
+if(brand)
+brand.textContent=
+"🍗 "+(cfg.brand||"Delhi 6 Hotel");
+
+if(heroTitle)
+heroTitle.textContent=
+cfg.heroTitle||cfg.brand||"Delhi 6 Hotel";
+
+if(heroSub)
+heroSub.textContent=
+cfg.heroSub||"Fresh • Hot • Delicious Biryani";
+
+if(menuTitle)
+menuTitle.textContent=
+cfg.menuTitle||"Our Menu";
+
+if(contactTitle)
+contactTitle.textContent=
+cfg.contactTitle||"Visit Us";
+
+if(addressText)
+addressText.textContent=
+cfg.address||"";
+
+if(phoneText)
+phoneText.textContent=
+cfg.phone||"";
+
+const wa=
+(cfg.wa||"").replace(/\D/g,"");
+
+document.querySelectorAll(".wa").forEach(x=>{
+
+if(wa)
+x.href="https://wa.me/"+wa;
+
+});
+
+const map=
+document.getElementById("map");
+
+if(map&&cfg.mapUrl)
+map.href=cfg.mapUrl;
+
+document.title=
+(cfg.brand||"Delhi 6 Hotel")+
+" | Order Online";
+
+}catch(e){}
+
+}
+
+
+/* MENU */
+
+async function load(){
+
+try{
+
+let {data,error}=await db
+.from("menu_items")
+.select("*")
+.eq("available",true)
+.order("created_at");
+
+if(error)throw error;
+
+menu=data||[];
+
+if(!menu.length)
+menu=fallback;
+
+render();
+
+}catch(e){
+
+menu=fallback;
+
+render();
+
+}
+
+}
+
+
+function render(){
+
+const el=
+document.getElementById("menu");
+
+if(!menu.length){
+
+el.innerHTML=
+'<p class="empty">Menu is currently unavailable.</p>';
+
+return;
+
+}
+
+el.innerHTML=
+menu.map((x,i)=>`
+
+<div class="card">
+
+<img
+src="${esc(
+x.image_url||
+'https://placehold.co/600x400/f4c400/111?text=Delhi+6+Biryani'
+)}"
+onerror="this.src='https://placehold.co/600x400/f4c400/111?text=Delhi
