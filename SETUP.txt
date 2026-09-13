@@ -1,0 +1,24 @@
+DELHI 6 HOTEL - PROPER GITHUB + CLOUDFLARE + SUPABASE SETUP
+
+1) Create a Supabase project.
+2) Open SQL Editor and run supabase_schema.sql.
+3) Create an admin user in Supabase Authentication > Users > Add user.
+4) Copy Project URL and anon/publishable key.
+5) In BOTH index.html and admin.html replace:
+   YOUR_SUPABASE_URL
+   YOUR_SUPABASE_ANON_KEY
+6) Put index.html in the customer GitHub repository.
+7) Put admin.html in a separate private/admin GitHub repository (or separate Cloudflare Pages project).
+8) Deploy the customer repository with Cloudflare Pages.
+9) Deploy the admin repository as a separate Cloudflare Pages project.
+10) Add your Google Maps URL from the Admin panel after login.
+
+WhatsApp: +91 8750794831
+Email: mdguljaar09@gmail.com
+Address: Indra Park C12, Pali Factory, Uttam Nagar, New Delhi
+
+IMPORTANT SECURITY:
+The admin site uses Supabase Authentication, not a hard-coded password. For production, tighten the RLS policies further so only your admin account/role can write data.
+
+
+Supabase URL and publishable key have already been inserted into index.html and admin.html.
