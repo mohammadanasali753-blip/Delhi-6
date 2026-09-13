@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Delhi 6 Hotel Admin</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>*{box-sizing:border-box}body{margin:0;font-family:Arial;background:#fffaf0;color:#171717}header{background:#f4c400;padding:18px 6%;font-size:23px;font-weight:900}.wrap{max-width:1050px;margin:auto;padding:25px 5%}.panel{background:#fff;padding:20px;border-radius:16px;box-shadow:0 3px 15px #0002;margin-bottom:18px}input,textarea,select{width:100%;padding:11px;margin:6px 0;border:1px solid #ccc;border-radius:8px}button{padding:11px 15px;border:0;border-radius:9px;background:#f4c400;font-weight:900;cursor:pointer}.danger{background:#171717;color:#fff}.logout{float:right}.row{display:grid;grid-template-columns:1.3fr .7fr 1.3fr .8fr .7fr;gap:7px;border-top:1px solid #ddd;padding:12px 0;align-items:center}.order{border-top:1px solid #ddd;padding:15px 0}.status{padding:8px;border-radius:8px;font-weight:800}.small{font-size:13px;color:#666}.login-card{max-width:460px;margin:70px auto;text-align:center;padding:34px 28px;border-radius:22px;background:linear-gradient(145deg,#fff,#fffdf3);box-shadow:0 12px 35px #0002;border:1px solid #f1df8a}.login-icon{width:72px;height:72px;margin:0 auto 14px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#f4c400;font-size:34px;box-shadow:0 8px 20px #f4c40055}.welcome{font-size:12px;font-weight:900;letter-spacing:3px;color:#8a6d00}.login-card h2{font-size:30px;margin:7px 0}.login-sub{color:#666;margin:0 0 20px}.pass-wrap{position:relative}.pass-wrap input{margin:0;padding:15px 52px 15px 16px;border:2px solid #e3d58a;border-radius:13px;font-size:16px;outline:none}.pass-wrap input:focus{border-color:#f4c400;box-shadow:0 0 0 4px #f4c40022}.eye{position:absolute;right:7px;top:7px;width:42px;height:42px;padding:0;border-radius:10px;background:transparent;font-size:20px}.login-btn{width:100%;margin-top:14px;padding:14px;border-radius:13px;background:#171717;color:#fff;font-size:16px}.login-error{display:none;color:#b00020;background:#fff0f0;border-radius:9px;padding:9px;margin-top:12px;font-size:14px;font-weight:700}@media(max-width:700px){.row{grid-template-columns:1fr}.logout{float:none;margin-top:10px;width:100%}}
 .login-card{max-width:460px;margin:70px auto;text-align:center;padding:34px 28px;border-radius:22px;background:linear-gradient(145deg,#fff,#fffdf3);box-shadow:0 12px 35px #0002;border:1px solid #f1df8a}.login-icon{width:72px;height:72px;margin:0 auto 14px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#f4c400;font-size:34px;box-shadow:0 8px 20px #f4c40055}.welcome{font-size:12px;font-weight:900;letter-spacing:3px;color:#8a6d00}.login-card h2{font-size:30px;margin:7px 0}.login-sub{color:#666;margin:0 0 20px}.pass-wrap{position:relative}.pass-wrap input{margin:0;padding:15px 52px 15px 16px;border:2px solid #e3d58a;border-radius:13px;font-size:16px;outline:none}.pass-wrap input:focus{border-color:#f4c400;box-shadow:0 0 0 4px #f4c40022}.eye{position:absolute;right:7px;top:7px;width:42px;height:42px;padding:0;border-radius:10px;background:transparent;font-size:20px}.login-btn{width:100%;margin-top:14px;padding:14px;border-radius:13px;background:#171717;color:#fff;font-size:16px}.login-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px #0003}.login-error{display:none;color:#b00020;background:#fff0f0;border-radius:9px;padding:9px;margin-top:12px;font-size:14px;font-weight:700}
-</style></head><body><header>🔐 Delhi 6 Hotel — Admin <button id="logoutBtn" class="logout" onclick="logout()" style="display:none">Logout</button></header><div class="wrap"><div id="login" class="panel login-card">
+</style><script src="config.js"></script></head><body><header>🔐 Delhi 6 Hotel — Admin <button id="logoutBtn" class="logout" onclick="logout()" style="display:none">Logout</button></header><div class="wrap"><div id="login" class="panel login-card">
 <div class="login-icon">🔐</div><div class="welcome">WELCOME</div><h2>Delhi 6 Admin</h2>
 <p class="login-sub">Admin panel me continue karne ke liye password enter karein.</p>
 <div class="pass-wrap"><input id="password" type="password" placeholder="Enter admin password" autocomplete="current-password" onkeydown="if(event.key==='Enter') login()"><button class="eye" type="button" onclick="togglePassword()" aria-label="Show password">👁️</button></div>
@@ -91,4 +91,29 @@ function applySettingsForm(c){let d={...defaultSettings(),...c};setBrand.value=d
 function getSettingsFromForm(){return {brand:setBrand.value.trim()||"Delhi 6 Hotel",heroTitle:setHeroTitle.value.trim()||"Delhi 6 Hotel",heroSub:setHeroSub.value.trim()||"Fresh • Hot • Delicious Biryani",menuTitle:setMenuTitle.value.trim()||"Our Menu",contactTitle:setContactTitle.value.trim()||"Visit Us",address:setAddress.value.trim(),phone:setPhone.value.trim(),primary:setPrimary.value,dark:setDark.value,wa:setWa.value.replace(/\D/g,""),mapUrl:mapurl.value.trim()}}
 async function saveSettings(){let cfg=getSettingsFromForm();let r=await getDb().from('site_settings').upsert({id:1,map_url:JSON.stringify(cfg)});if(r.error){alert('Save failed: '+r.error.message);return}settingsMsg.textContent='✅ Website changes saved. Customer website ko refresh karo.'}
 async function resetSettings(){if(!confirm('Website customization reset karni hai?'))return;let cfg=defaultSettings();cfg.mapUrl=mapurl.value.trim();applySettingsForm(cfg);let r=await getDb().from('site_settings').upsert({id:1,map_url:cfg.mapUrl});if(r.error){alert(r.error.message);return}settingsMsg.textContent='↩ Website colors/text reset ho gaye.'}
-async function saveMap(){let raw=await getDb().from('site_settings').select('map_url').eq('id',1).maybeSingle();let cfg=defaultSettings();try{if((raw.data?.map_url||'').trim().startsWith("{"))cfg={...cfg,...JSON.parse(raw.data.map_url)}}catch(e){}cfg.mapUrl=mapurl.value.trim();let r=await getDb().from('site_settings').upsert({id:1,map_url:JSON.stringify(cfg)});if(r.error)alert(r.error.message);else alert('Google Maps link saved.')}applySettingsForm(defaultSettings());init();</script></body></html>
+async function saveMap(){let raw=await getDb().from('site_settings').select('map_url').eq('id',1).maybeSingle();let cfg=defaultSettings();try{if((raw.data?.map_url||'').trim().startsWith("{"))cfg={...cfg,...JSON.parse(raw.data.map_url)}}catch(e){}cfg.mapUrl=mapurl.value.trim();let r=await getDb().from('site_settings').upsert({id:1,map_url:JSON.stringify(cfg)});if(r.error)alert(r.error.message);else alert('Google Maps link saved.')}applySettingsForm(defaultSettings());init();</script>
+<script>
+(function(){
+  function boot(){
+    const logged=sessionStorage.getItem("delhi6_admin_logged_in")==="1";
+    const login=document.getElementById("login");
+    const app=document.getElementById("app");
+    const logoutBtn=document.getElementById("logoutBtn");
+    if(logged){
+      if(login) login.style.display="none";
+      if(app) app.style.display="block";
+      if(logoutBtn) logoutBtn.style.display="block";
+      if(typeof init==="function") init();
+    }else{
+      if(login) login.style.display="block";
+      if(app) app.style.display="none";
+      if(logoutBtn) logoutBtn.style.display="none";
+    }
+    const p=document.getElementById("password");
+    if(p) p.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();login();}});
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot);
+  else boot();
+})();
+</script>
+</body></html>
