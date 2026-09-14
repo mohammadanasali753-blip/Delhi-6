@@ -46,7 +46,30 @@ function requestMyLocation(){
   setLocationStatus('🟡 Current location le raha hoon...');
   navigator.geolocation.getCurrentPosition(saveLiveLocation,locationError,{enableHighAccuracy:true,maximumAge:0,timeout:20000});
 }
-function sendLocation(){requestMyLocation()}
+let locationWatchId=null;
+async function saveLiveLocation(pos){
+  try{
+    await db.rpc("delivery_update_location",{
+      p_delivery_boy_id:boy.id,
+      p_lat:pos.coords.latitude,
+      p_lng:pos.coords.longitude,
+      p_accuracy:pos.coords.accuracy||null
+    });
+  }catch(e){console.warn("Location update:",e.message||e)}
+}
+function startLiveLocation(){
+  if(!boy||!navigator.geolocation)return;
+  if(locationWatchId!==null)navigator.geolocation.clearWatch(locationWatchId);
+  locationWatchId=navigator.geolocation.watchPosition(
+    saveLiveLocation,
+    err=>console.warn("Location permission/error:",err.message),
+    {enableHighAccuracy:true,maximumAge:5000,timeout:15000}
+  );
+  navigator.geolocation.getCurrentPosition(saveLiveLocation,()=>{},
+    {enableHighAccuracy:true,maximumAge:0,timeout:15000});
+}
+function sendLocation(){if(boy&&navigator.geolocation)navigator.geolocation.getCurrentPosition(saveLiveLocation,()=>{}, {enableHighAccuracy:true,maximumAge:5000,timeout:15000})}
+
 async function loadAll(){await Promise.all([loadAvailable(),loadMine()]);sendLocation()}
 const saved=localStorage.getItem('delhi6_delivery_boy');if(saved){try{boy=JSON.parse(saved);showPanel();startLiveLocation();loadAll()}catch(e){localStorage.removeItem('delhi6_delivery_boy')}}
 setInterval(()=>{if(boy){loadAvailable();loadMine();sendLocation()}},10000);
