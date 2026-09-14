@@ -1,16 +1,16 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Delhi 6 — Delivery Boy</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#fffaf0;color:#171717}.head{background:#f4c400;padding:16px 5%;font-size:21px;font-weight:900;display:flex;justify-content:space-between;align-items:center}.wrap{max-width:900px;margin:auto;padding:20px 5%}.card{background:#fff;border-radius:18px;padding:18px;margin-bottom:16px;box-shadow:0 4px 18px #0002}input{width:100%;padding:12px;margin:6px 0;border:1px solid #ccc;border-radius:9px;font:inherit}button{padding:11px 15px;border:0;border-radius:9px;background:#f4c400;font-weight:900;cursor:pointer}.dark{background:#171717;color:#fff}.danger{background:#b00020;color:#fff}.muted{color:#666;font-size:13px}.order{border:1px solid #ddd;border-radius:14px;padding:14px;margin:10px 0}.pill{display:inline-block;padding:5px 8px;border-radius:20px;background:#eee;font-size:12px;font-weight:800}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:650px){.grid{grid-template-columns:1fr}}.loc{background:#eaf6ff;padding:10px;border-radius:10px;margin:8px 0}.success{color:#087a2f;font-weight:800}.error{color:#b00020;font-weight:800}.login{max-width:450px;margin:60px auto}.map{display:inline-block;margin-top:7px;text-decoration:none;font-weight:800;color:#075ea8}.row{margin:7px 0}</style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script></head><body>
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Delhi 6 — Delivery Boy</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#fffaf0;color:#171717}.head{background:#f4c400;padding:16px 5%;font-size:21px;font-weight:900;display:flex;justify-content:space-between;align-items:center}.wrap{max-width:900px;margin:auto;padding:20px 5%}.card{background:#fff;border-radius:18px;padding:18px;margin-bottom:16px;box-shadow:0 4px 18px #0002}input{width:100%;padding:12px;margin:6px 0;border:1px solid #ccc;border-radius:9px;font:inherit}button{padding:11px 15px;border:0;border-radius:9px;background:#f4c400;font-weight:900;cursor:pointer}.dark{background:#171717;color:#fff}.danger{background:#b00020;color:#fff}.muted{color:#666;font-size:13px}.order{border:1px solid #ddd;border-radius:14px;padding:14px;margin:10px 0}.pill{display:inline-block;padding:5px 8px;border-radius:20px;background:#eee;font-size:12px;font-weight:800}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:650px){.grid{grid-template-columns:1fr}}.loc{background:#eaf6ff;padding:10px;border-radius:10px;margin:8px 0}.success{color:#087a2f;font-weight:800}.error{color:#b00020;font-weight:800}.login{max-width:450px;margin:60px auto}.map{display:inline-block;margin-top:7px;text-decoration:none;font-weight:800;color:#075ea8}.customerMap{height:250px;width:100%;margin-top:10px;border-radius:12px;overflow:hidden;border:1px solid #ddd;background:#eee}.navMap{height:320px;width:100%;margin-top:10px;border-radius:12px;overflow:hidden;border:1px solid #ddd;background:#eee}.navBox{background:#eef7ff;border:1px solid #b9dcf7;padding:12px;border-radius:12px;margin-top:10px}.turn{font-size:20px;font-weight:900;margin:4px 0}.navSmall{font-size:13px;color:#555;margin-top:4px}.row{margin:7px 0}</style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script></head><body>
 <header class="head"><span>🚚 Delhi 6 — Delivery Boy</span><button id="logout" class="dark" onclick="logout()" style="display:none">Logout</button></header>
 <main class="wrap">
 <section id="login" class="card login"><h2>🚚 Delivery Boy Login</h2><p class="muted">Admin se mila Login ID aur PIN enter karo.</p><input id="loginId" placeholder="Login ID" autocomplete="username"><input id="pin" type="password" inputmode="numeric" maxlength="8" placeholder="4-8 digit PIN" autocomplete="current-password"><button id="loginBtn" style="width:100%;margin-top:8px">Login</button><p id="loginMsg" class="error"></p></section>
 <section id="panel" style="display:none"><div class="card"><div class="grid"><div><b id="boyName">Delivery Boy</b><div class="muted" id="boyPhone"></div></div><div><b>💰 Current Delivery Payment</b><div id="boyPay">₹0</div></div></div></div>
-<div class="card"><h2>📡 My Live Location</h2><div id="myLocationStatus" class="loc">📍 Location not started yet.</div><button onclick="requestMyLocation()">📍 Update My Location</button><a id="myLocationMap" href="#" target="_blank" class="map" style="display:none">🗺️ Open My Location</a><p class="muted">Location permission Allow rakho. Location Admin aur active customer ko latest position dikhayegi.</p></div>
+<div class="card"><h2>📡 My Live Location</h2><div id="myLocationStatus" class="loc">📍 Location not started yet.</div><button onclick="requestMyLocation()">📍 Update My Location</button><a id="myLocationMap" href="#" target="_blank" class="map" style="display:none">🗺️ Open My Location</a><p class="muted">Location permission Allow rakho. Location Admin aur active customer ko latest position dikhayegi. Navigation me customer tak road route aur left/right turn guidance milegi.</p></div>
 <div class="card"><h2>🔔 Delivery Requests</h2><p class="muted">Request me customer ki complete details aur location dikhengi.</p><div id="available">Loading...</div></div>
 <div class="card"><h2>🚚 My Deliveries</h2><div id="mine">Loading...</div></div></section></main>
 <script>
 const SB_URL='https://qxktximeddpttcjkaumo.supabase.co';
 const SB_KEY='sb_publishable_mUL6OaOwJ649Xi68uQOcLw_9g0fM8mM';
 const db=window.supabase.createClient(SB_URL,SB_KEY);
-let boy=null,locationWatchId=null;
+let boy=null,locationWatchId=null,customerMaps={},navigationSessions={};
 const $=id=>document.getElementById(id);
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function money(n){return '₹'+Number(n||0).toLocaleString('en-IN')}
@@ -39,6 +39,8 @@ async function saveLiveLocation(p){
    const r=await db.rpc('delivery_update_location',{p_delivery_boy_id:boy.id,p_lat:p.coords.latitude,p_lng:p.coords.longitude,p_accuracy:p.coords.accuracy||null});
    if(r.error)throw r.error;
    const lat=p.coords.latitude,lng=p.coords.longitude;
+   window.lastDeliveryBoyPosition={lat,lng};
+   updateDeliveryBoyOnMaps(lat,lng);
    const url='https://www.google.com/maps?q='+lat+','+lng;
    $('myLocationMap').href=url;$('myLocationMap').style.display='inline-block';
    setLocationStatus('🟢 <b>Live location active</b><br>📍 '+lat.toFixed(6)+', '+lng.toFixed(6)+'<br><span class="muted">Updated '+new Date().toLocaleTimeString('en-IN')+'</span>');
@@ -47,6 +49,161 @@ async function saveLiveLocation(p){
 function locationError(e){setLocationStatus('🔴 <b>Location permission/error:</b> '+esc(e.message||'Location unavailable')+'<br><span class="muted">Phone/browser me Location Allow karo.</span>')}
 function startLiveLocation(){if(!navigator.geolocation){locationError({message:'Geolocation supported nahi hai'});return}if(locationWatchId!==null)navigator.geolocation.clearWatch(locationWatchId);setLocationStatus('🟡 Location permission maang raha hai...');locationWatchId=navigator.geolocation.watchPosition(saveLiveLocation,locationError,{enableHighAccuracy:true,maximumAge:5000,timeout:15000})}
 function requestMyLocation(){if(!navigator.geolocation)return locationError({message:'Geolocation supported nahi hai'});setLocationStatus('🟡 Current location le raha hoon...');navigator.geolocation.getCurrentPosition(saveLiveLocation,locationError,{enableHighAccuracy:true,maximumAge:0,timeout:20000})}
+function updateDeliveryBoyOnMaps(lat,lng){
+  Object.values(customerMaps).forEach(x=>{
+    try{
+      if(x.boyMarker){
+        x.boyMarker.setLatLng([lat,lng]);
+      }else{
+        x.boyMarker=L.marker([lat,lng]).addTo(x.map);
+        x.boyMarker.bindPopup('🚚 Your Live Location');
+      }
+      if(x.customerMarker){
+        const bounds=L.latLngBounds([x.customerMarker.getLatLng(),[lat,lng]]);
+        x.map.fitBounds(bounds,{padding:[30,30],maxZoom:16});
+      }
+    }catch(e){}
+  });
+}
+
+function navKey(id){return 'nav_'+String(id).replace(/[^a-zA-Z0-9_-]/g,'_')}
+function formatDistance(m){
+  m=Number(m||0);
+  return m>=1000?(m/1000).toFixed(1)+' km':Math.round(m)+' m';
+}
+function turnLabel(step){
+  const man=step?.maneuver||{};
+  const type=String(man.type||'').toLowerCase();
+  const mod=String(man.modifier||'').toLowerCase();
+  if(type==='arrive')return '🏁 You have arrived';
+  if(type==='depart')return '⬆️ Start driving';
+  if(type==='roundabout'||type==='rotary')return '🔄 Enter roundabout';
+  if(mod==='left')return '⬅️ Turn left';
+  if(mod==='right')return '➡️ Turn right';
+  if(mod==='slight left')return '↖️ Slight left';
+  if(mod==='slight right')return '↗️ Slight right';
+  if(mod==='sharp left')return '↙️ Sharp left';
+  if(mod==='sharp right')return '↘️ Sharp right';
+  if(mod==='uturn')return '↩️ U-turn';
+  if(type==='continue'||type==='new name')return '⬆️ Continue straight';
+  return '⬆️ Continue';
+}
+function buildNavInstruction(step){
+  if(!step)return {label:'📍 Calculating route...',distance:'',text:''};
+  const name=step.name?` on ${step.name}`:'';
+  return {label:turnLabel(step),distance:formatDistance(step.distance),text:(step.maneuver?.type==='arrive'?'Customer location reached.':`${turnLabel(step)}${name}`)};
+}
+function nearestRouteIndex(coords,route){
+  let best=0,bestD=Infinity;
+  route.forEach((pt,i)=>{
+    const d=(pt[0]-coords[0])**2+(pt[1]-coords[1])**2;
+    if(d<bestD){bestD=d;best=i;}
+  });
+  return best;
+}
+async function startNavigation(orderId,address){
+  const dest=customerCoordsFromMapUrl(mapFromAddress(address));
+  if(!dest){alert('Customer ki GPS location is order me available nahi hai.');return;}
+  const key=navKey(orderId);
+  const box=document.getElementById(key+'_box');
+  const mapEl=document.getElementById(key+'_map');
+  if(!box||!mapEl)return;
+
+  if(navigationSessions[key]?.watch!==null && navigationSessions[key]?.watch!==undefined){
+    try{navigator.geolocation.clearWatch(navigationSessions[key].watch)}catch(e){}
+  }
+  if(navigationSessions[key]?.map){try{navigationSessions[key].map.remove()}catch(e){}}
+
+  box.style.display='block';
+  box.innerHTML='<div class="turn">🧭 Getting your route...</div><div class="navSmall">Current location aur customer location calculate ho rahi hai.</div>';
+
+  if(!navigator.geolocation){
+    box.innerHTML='<div class="turn">❌ GPS unavailable</div><div class="navSmall">Is browser me location support nahi hai.</div>';
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    const origin=[pos.coords.latitude,pos.coords.longitude];
+    const session={dest,origin,map:null,line:null,watch:null,route:[],steps:[],lastStep:0,lastRouteAt:0};
+    navigationSessions[key]=session;
+
+    session.map=L.map(mapEl,{zoomControl:true}).setView(origin,15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(session.map);
+    session.boyMarker=L.marker(origin).addTo(session.map).bindPopup('🚚 Your Current Location');
+    session.customerMarker=L.marker(dest).addTo(session.map).bindPopup('📍 Customer Location');
+
+    async function routeNow(lat,lng){
+      try{
+        const url=`https://router.project-osrm.org/route/v1/driving/${lng},${lat};${dest[1]},${dest[0]}?overview=full&geometries=geojson&steps=true`;
+        const resp=await fetch(url);
+        const data=await resp.json();
+        if(data.code!=='Ok'||!data.routes?.[0])throw new Error('Route not found');
+        const r=data.routes[0];
+        session.route=r.geometry.coordinates.map(x=>[x[1],x[0]]);
+        session.steps=r.legs?.[0]?.steps||[];
+        session.lastRouteAt=Date.now();
+        if(session.line)session.line.remove();
+        session.line=L.polyline(session.route,{weight:6}).addTo(session.map);
+        session.map.fitBounds(L.latLngBounds([[lat,lng],dest]),{padding:[25,25],maxZoom:16});
+        updateNavInstruction(lat,lng);
+      }catch(e){
+        box.innerHTML='<div class="turn">❌ Route nahi mil rahi</div><div class="navSmall">Internet/GPS check karo aur dobara Start Navigation dabao.</div>';
+      }
+    }
+
+    function updateNavInstruction(lat,lng){
+      if(!session.steps.length)return;
+      // OSRM steps are ordered; choose the first step whose maneuver location is ahead.
+      let best=session.lastStep;
+      let bestD=Infinity;
+      for(let i=session.lastStep;i<session.steps.length;i++){
+        const c=session.steps[i].maneuver?.location;
+        if(!c)continue;
+        const d=(c[1]-lat)**2+(c[0]-lng)**2;
+        if(d<bestD){bestD=d;best=i;}
+      }
+      // If within ~45m of the current maneuver, advance to the next one.
+      const step=session.steps[Math.min(best,session.steps.length-1)];
+      const c=step.maneuver?.location;
+      const distToTurn=c?Math.sqrt((c[1]-lat)**2+(c[0]-lng)**2)*111000:99999;
+      let shown=step;
+      if(distToTurn<45 && best+1<session.steps.length) shown=session.steps[best+1];
+      session.lastStep=Math.min(best,session.steps.length-1);
+      const ins=buildNavInstruction(shown);
+      const road=shown.name?` • ${esc(shown.name)}`:'';
+      box.innerHTML=`<div class="turn">${ins.label}</div><div><b>${esc(ins.distance)}</b>${road}</div><div class="navSmall">Live GPS: ${lat.toFixed(6)}, ${lng.toFixed(6)}</div>`;
+    }
+
+    await routeNow(origin[0],origin[1]);
+
+    session.watch=navigator.geolocation.watchPosition(async pp=>{
+      const lat=pp.coords.latitude,lng=pp.coords.longitude;
+      session.boyMarker.setLatLng([lat,lng]);
+      updateNavInstruction(lat,lng);
+      // Re-route periodically so the route follows the actual road position.
+      if(Date.now()-session.lastRouteAt>20000)await routeNow(lat,lng);
+      await saveLiveLocation(pp);
+    },err=>{
+      box.innerHTML+=`<div class="navSmall">🔴 GPS update error: ${esc(err.message||'Location unavailable')}</div>`;
+    },{enableHighAccuracy:true,maximumAge:3000,timeout:15000});
+
+    session.stop=()=>{
+      if(session.watch!==null)navigator.geolocation.clearWatch(session.watch);
+      session.watch=null;
+    };
+  },err=>{
+    box.innerHTML='<div class="turn">🔴 GPS permission required</div><div class="navSmall">Phone me Location Allow karo, phir Start Navigation dabao.</div>';
+  },{enableHighAccuracy:true,maximumAge:0,timeout:20000});
+}
+function stopNavigation(orderId){
+  const key=navKey(orderId),s=navigationSessions[key];
+  if(s?.stop)s.stop();
+  if(s?.map)try{s.map.remove()}catch(e){}
+  delete navigationSessions[key];
+  const box=document.getElementById(key+'_box');
+  if(box)box.style.display='none';
+}
+
 async function loadAvailable(){
  const box=$('available');if(!boy)return;
  try{
@@ -86,18 +243,27 @@ function customerCoordsFromMapUrl(url){
  return m?[Number(m[1]),Number(m[2])]:null;
 }
 function renderCustomerMaps(rows,prefix){
- if(typeof L==='undefined')return;
- rows.forEach(o=>{
-   const url=mapFromAddress(o.address),coords=customerCoordsFromMapUrl(url);
-   if(!coords)return;
-   const safe=String(o.order_id).replace(/[^a-zA-Z0-9_-]/g,'_');
-   const el=document.getElementById(prefix+safe);
-   if(!el)return;
-   const m=L.map(el,{zoomControl:true}).setView(coords,16);
-   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(m);
-   L.marker(coords).addTo(m).bindPopup('📍 Customer Location').openPopup();
- });
+  if(typeof L==='undefined')return;
+  rows.forEach(o=>{
+    const url=mapFromAddress(o.address),coords=customerCoordsFromMapUrl(url);
+    if(!coords)return;
+    const safe=String(o.order_id).replace(/[^a-zA-Z0-9_-]/g,'_');
+    const el=document.getElementById(prefix+safe);
+    if(!el)return;
+    const key=prefix+safe;
+    try{ if(customerMaps[key]) customerMaps[key].map.remove(); }catch(e){}
+    const map=L.map(el,{zoomControl:true}).setView(coords,16);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+    const customerMarker=L.marker(coords).addTo(map);
+    customerMarker.bindPopup('📍 Customer Location').openPopup();
+    customerMaps[key]={map:map,customerMarker:customerMarker,boyMarker:null};
+    // If the delivery boy location is already known, show it immediately.
+    if(window.lastDeliveryBoyPosition){
+      updateDeliveryBoyOnMaps(window.lastDeliveryBoyPosition.lat,window.lastDeliveryBoyPosition.lng);
+    }
+  });
 }
+
 
 async function acceptOrder(id){if(!confirm('Ye delivery accept karni hai?'))return;try{const r=await db.rpc('delivery_accept_order',{p_delivery_boy_id:boy.id,p_order_id:String(id)});if(r.error)throw r.error;alert('Delivery accepted successfully.');await loadAll();sendLocation()}catch(e){alert('Accept error: '+(e.message||e))}}
 async function removeRequest(id){if(!confirm('Is delivery request ko remove karna hai?'))return;try{const r=await db.rpc('delivery_remove_request',{p_delivery_boy_id:boy.id,p_order_id:String(id)});if(r.error)throw r.error;await loadAvailable()}catch(e){alert('Remove error: '+(e.message||e))}}
@@ -117,7 +283,10 @@ async function loadMine(){
       <div class="row">👤 <b>${esc(o.customer_name)}</b></div>
       <div class="row">📞 <a href="tel:${esc(o.phone)}">${esc(o.phone)}</a></div>
       <div class="row">🏠 ${esc(o.address)}</div>
-      ${map?`<div class="customerMap" id="mineMap_${locId.replace('myLiveLocation_','')}"></div><a class="map" href="${map}" target="_blank">🗺️ Open Customer Location in Google Maps</a>`:''}
+      ${map?`<div class="customerMap" id="mineMap_${locId.replace('myLiveLocation_','')}"></div><a class="map" href="${map}" target="_blank">🗺️ Open Customer Location in Google Maps</a>
+      <div style="margin-top:10px"><button onclick="startNavigation('${esc(o.order_id)}','${esc(o.address)}')">🧭 Start Navigation to Customer</button> <button class="dark" onclick="stopNavigation('${esc(o.order_id)}')">⏹️ Stop Navigation</button></div>
+      <div id="${navKey(o.order_id)}_box" class="navBox" style="display:none"></div>
+      <div id="${navKey(o.order_id)}_map" class="navMap"></div>`:''}
       <div class="row" style="margin-top:8px"><b>📡 Your Live Location</b></div>
       <div id="${locId}" class="small" style="padding:8px;background:#fff8d6;border-radius:8px">Getting current location...</div>
       <div class="row">🧾 Order Total: <b>${money(o.total)}</b></div>
