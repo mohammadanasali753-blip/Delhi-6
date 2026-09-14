@@ -61,7 +61,7 @@
 <script>
 const SB_URL="https://qxktximeddpttcjkaumo.supabase.co";
 const SB_KEY="sb_publishable_mUL6OaOwJ649Xi68uQOcLw_9g0fM8mM";
-const db=supabase.createClient(SB_URL,SB_KEY);let menu=[],cart=[],deliveryCharge=0,settings={upiId:"8750794831@ptsbi",upiQrUrl:"",hotelImageUrl:""};
+const db=supabase.createClient(SB_URL,SB_KEY);let menu=[],cart=[],deliveryCharge=0,settings={upiId:"8750794831@ptsbi",upiQrUrl:"",hotelImageUrl:"",hotelImages:[]};
 const fallback=[{name:"Chicken Biryani",price:180,description:"Aromatic chicken biryani",image_url:""},{name:"Mutton Biryani",price:260,description:"Rich mutton biryani",image_url:""},{name:"Egg Biryani",price:130,description:"Tasty egg biryani",image_url:""},{name:"Veg Biryani",price:120,description:"Fragrant veg biryani",image_url:""}];
 function esc(v){return String(v??"").replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))}
 function money(n){return "₹"+Number(n||0).toLocaleString("en-IN")}
@@ -134,6 +134,7 @@ function renderHotelSlider(cfg){
   const box=document.getElementById("hotelSlider"); if(!box)return;
   let imgs=Array.isArray(cfg.hotelImages)?cfg.hotelImages.filter(Boolean):[];
   if(cfg.hotelImageUrl && !imgs.includes(cfg.hotelImageUrl)) imgs.unshift(cfg.hotelImageUrl);
+  imgs=[...new Set(imgs)];
   imgs=[...new Set(imgs)];
   if(!imgs.length){box.style.display="none";if(hotelSlideTimer)clearInterval(hotelSlideTimer);return;}
   box.style.display="block"; hotelSlideIndex=0;
