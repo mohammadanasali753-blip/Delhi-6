@@ -215,7 +215,7 @@ async function saveEditedMenu(id){
     let image_url=urlEl.value.trim(); const f=fileEl.files?.[0];
     if(f){msg.textContent='Uploading new image...'; image_url=await uploadProductImage(f);}
     msg.textContent='Saving changes...';
-    const r=await getDb().from('menu_items').update({name,price,description,image_url}).eq('id',id);
+    const r=await getDb().from('menu_items').update({name,price,half_price:half_price||null,description,image_url}).eq('id',id);
     if(r.error)throw new Error(r.error.message);
     alert('✅ Menu item updated successfully');
     document.getElementById('editMenuModal')?.remove();
