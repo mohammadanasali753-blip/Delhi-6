@@ -428,7 +428,21 @@ async function loadDeliveryBoyLiveLocation(orderId,phone){
     box.style.display="none";
   }
 }
-async function showTracker(){const {data:sessionData}=await db.auth.getSession();if(!sessionData?.session?.user){document.getElementById("tracker").style.display="none";return}const id=localStorage.getItem("delhi6_order_id"),phone=localStorage.getItem("delhi6_order_phone");if(!id||!phone){document.getElementById("tracker").style.display="none";return}try{let {data,error}=await db.rpc("get_order_status",{p_order_id:id,p_phone:phone});if(error)throw error;let row=Array.isArray(data)?data[0]:data;if(!row){document.getElementById("tracker").style.display="none";return}updateTracker(row.status||"Pending",row.total,row.created_at);loadOrderChat();loadDeliveryBoyLiveLocation(id,phone)}catch(e){document.getElementById("tracker").style.display="none"}}
+async function showTracker(){
+const {data:sessionData}=await db.auth.getSession();
+if(!sessionData?.session?.user){document.getElementById("tracker").style.display="none";return}
+const id=localStorage.getItem("delhi6_order_id"),phone=localStorage.getItem("delhi6_order_phone");
+if(!id||!phone){document.getElementById("tracker").style.display="none";return}
+try{
+let {data,error}=await db.rpc("get_order_status",{p_order_id:id,p_phone:phone});
+if(error)throw error;
+let row=Array.isArray(data)?data[0]:data;
+if(!row){document.getElementById("tracker").style.display="none";return}
+updateTracker(row.status||"Pending",row.total,row.created_at);
+loadOrderChat();
+await loadDeliveryBoyLiveLocation(id,phone);
+}catch(e){document.getElementById("tracker").style.display="none"}
+}
 async function cancelMyOrder(){const id=localStorage.getItem("delhi6_order_id"),phone=localStorage.getItem("delhi6_order_phone");if(!id||!phone)return;if(!confirm("Cancel this order?"))return;let {data,error}=await db.rpc("cancel_order",{p_order_id:id,p_phone:phone});if(error)return alert("Unable to cancel: "+error.message);let status=Array.isArray(data)?data[0]?.status:data;if(status==="Cancelled"){updateTracker("Cancelled");alert("Order cancelled.")}else{updateTracker(status||"Pending");alert("This order can no longer be cancelled because processing has started.")}}
 async function loadGeneralMessages(){const box=document.getElementById("myMessages"),list=document.getElementById("myMessagesList"),badge=document.getElementById("messageBadge");if(!box||!list)return;let {data,error}=await db.rpc("get_my_messages");if(error){list.innerHTML='<div class="muted">Unable to load messages.</div>';return}renderMessageList(list,data||[]);if(badge){const unread=(data||[]).filter(m=>m.sender==='admin').length;badge.textContent=unread;badge.style.display=unread?'inline-block':'none'}const floatBadge=document.getElementById("chatFloatBadge");if(floatBadge){const unread=(data||[]).filter(m=>m.sender==='admin').length;floatBadge.textContent=unread;floatBadge.style.display=unread?'block':'none'}}
 function renderMessageList(list,data){list.innerHTML=(data||[]).map(m=>`<div class="chatMsg ${m.sender==='customer'?'customer':'admin'}"><b>${m.sender==='admin'?'Hotel':'You'}</b><br>${esc(m.message)}<div style="font-size:10px;opacity:.65;margin-top:3px">${new Date(m.created_at).toLocaleString('en-IN')}</div></div>`).join('')||'<div class="muted">No messages yet.</div>';list.scrollTop=list.scrollHeight}
