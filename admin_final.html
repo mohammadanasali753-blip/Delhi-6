@@ -1,0 +1,179 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Delhi 6 Hotel Admin</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js" onerror="window.DELHI6_CONFIG=window.DELHI6_CONFIG||{}"></script><style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#fffaf0;color:#171717}header{background:#f4c400;padding:18px 6%;font-size:23px;font-weight:900;position:sticky;top:0;z-index:5}.wrap{max-width:1100px;margin:auto;padding:24px 5%}.panel{background:#fff;padding:20px;border-radius:16px;box-shadow:0 3px 15px #0002;margin-bottom:18px}input,textarea,select{width:100%;padding:11px;margin:6px 0;border:1px solid #ccc;border-radius:8px;font:inherit}button{padding:11px 15px;border:0;border-radius:9px;background:#f4c400;font-weight:900;cursor:pointer}.danger{background:#171717;color:#fff}.logout{float:right;background:#171717;color:#fff}.small{font-size:13px;color:#666}.login-card{max-width:460px;margin:70px auto;text-align:center;padding:34px 28px;border-radius:22px;background:#fff;box-shadow:0 12px 35px #0002}.pass-wrap{position:relative}.pass-wrap input{padding-right:52px}.eye{position:absolute;right:7px;top:7px;width:42px;height:42px;padding:0;background:transparent}.login-btn{width:100%;margin-top:14px;background:#171717;color:#fff}.login-error{display:none;color:#b00020;background:#fff0f0;border-radius:9px;padding:9px;margin-top:12px;font-weight:700}.row{display:grid;grid-template-columns:1fr auto auto;gap:8px;border-top:1px solid #ddd;padding:12px 0;align-items:center}.order{border-top:1px solid #ddd;padding:15px 0}.status{font-weight:800}.customer,.chatItem,.walletItem{border:1px solid #ddd;border-radius:12px;padding:13px;margin:9px 0}.customerHead{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}.blocked{background:#fff0f0;border-color:#e99}.chatList{max-height:320px;overflow:auto;background:#fafafa;border-radius:10px;padding:8px}.chatMsg{padding:8px 10px;margin:5px 0;border-radius:10px;max-width:88%;background:#eee}.chatMsg.customer{margin-left:auto;background:#f4c400}.chatMsg.admin{margin-right:auto;background:#e8e8e8}.chatRow{display:flex;gap:8px}.chatRow input{flex:1}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}@media(max-width:700px){.grid2{grid-template-columns:1fr}.row{grid-template-columns:1fr}.logout{float:none}}
+
+.newMsgPopup{display:none;position:fixed;right:18px;bottom:18px;width:min(390px,calc(100vw - 28px));background:#fff;border:2px solid #f4c400;border-radius:16px;box-shadow:0 12px 35px #0005;z-index:100;padding:16px}
+.newMsgPopup.show{display:block}.newMsgHead{display:flex;justify-content:space-between;align-items:center;font-weight:900}.newMsgClose{border:0;background:#eee;border-radius:50%;width:30px;height:30px;font-size:18px}.newMsgText{margin:10px 0;padding:10px;background:#fffaf0;border-radius:10px;word-break:break-word}.newMsgMeta{font-size:13px;color:#555;line-height:1.5}
+</style></head><body>
+<header>🔐 Delhi 6 Hotel — Admin <button id="logoutBtn" class="logout" onclick="logout()" style="display:none">Logout</button></header>
+<div class="wrap"><div id="login" class="panel login-card"><div style="font-size:45px">🔐</div><div class="small">SECURE ADMIN ACCESS</div><h2>Delhi 6 Admin</h2><p class="small">Enter the admin password to continue.</p><div class="pass-wrap"><input id="password" type="password" placeholder="Enter admin password" autocomplete="current-password"><button class="eye" type="button" onclick="togglePassword()">👁</button></div><div id="loginError" class="login-error"></div><button class="login-btn" onclick="login()">Login →</button></div>
+<div id="newMessagePopup" class="newMsgPopup">
+<div class="newMsgHead"><span>📩 New Customer Message</span><button class="newMsgClose" onclick="closeNewMessagePopup()">×</button></div>
+<div id="newMessageMeta" class="newMsgMeta"></div>
+<div id="newMessageText" class="newMsgText"></div>
+<button onclick="closeNewMessagePopup();document.getElementById('customerMessages').scrollIntoView({behavior:'smooth'})">Open Messages</button>
+</div>
+<div id="app" style="display:none">
+<div class="panel"><h2>🏨 Hotel Photo</h2><label><b>Upload Hotel Photo</b></label><div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0">
+<button type="button" onclick="hotelImageFile.click()">📷 Camera</button>
+<button type="button" onclick="hotelImageGallery.click()">🖼️ Gallery / Album</button>
+</div>
+<input id="hotelImageFile" type="file" accept="image/*" capture="environment" onchange="previewHotelImageFile()" style="display:none">
+<input id="hotelImageGallery" type="file" accept="image/*" onchange="previewHotelImageGallery()" style="display:none">
+<small style="display:block;color:#666;margin:5px 0">Camera ya Gallery/Album se photo select karo.</small><input id="hotelImageMore" type="file" accept="image/*" multiple onchange="previewMoreHotelImages()" style="display:none"><button type="button" onclick="hotelImageMore.click()">➕ Add More Photos</button><div id="hotelMorePreview" style="margin:6px 0"></div><div id="hotelSavedGallery" style="margin:10px 0"></div><input id="hotelImageUrl" type="url" placeholder="Ya hotel image URL paste karo (optional)" oninput="previewHotelImage()"><div id="hotelImagePreview" style="margin:6px 0"></div><button onclick="saveHotelImage()">Save Hotel Photo(s)</button><p id="hotelImageMsg" class="small"></p></div>
+<div class="panel"><h2>🎨 Website Customization</h2><label>Brand Name</label><input id="setBrand"><label>Hero Heading</label><input id="setHeroTitle"><label>Hero Subtitle</label><input id="setHeroSub"><label>Menu Heading</label><input id="setMenuTitle"><label>Contact Heading</label><input id="setContactTitle"><label>Address</label><input id="setAddress"><label>Phone</label><input id="setPhone"><label>Primary Colour</label><input id="setPrimary" type="color"><label>Dark Colour</label><input id="setDark" type="color"><label>WhatsApp Number</label><input id="setWa"><button onclick="saveSettings()">Save Website Changes</button><button class="danger" onclick="resetSettings()">Reset</button><p id="settingsMsg" class="small"></p></div>
+<div class="panel"><h2>💳 Payment & Delivery</h2><label>Delivery Charge</label><input id="deliveryCharge" type="number" min="0" step="1"><label>UPI ID</label><input id="upiId"><label><b>UPI QR Image</b></label><div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0">
+<button type="button" onclick="upiQrFile.click()">📷 Camera</button>
+<button type="button" onclick="upiQrGallery.click()">🖼️ Gallery / Album</button>
+</div>
+<input id="upiQrFile" type="file" accept="image/*" capture="environment" onchange="previewQrFile()" style="display:none">
+<input id="upiQrGallery" type="file" accept="image/*" onchange="previewQrGallery()" style="display:none">
+<small style="display:block;color:#666;margin:5px 0">Camera ya Gallery/Album se QR photo select karo.</small><input id="upiQrUrl" type="url" placeholder="Ya QR image URL paste karo (optional)" oninput="previewQr()"><div id="upiQrPreview" style="margin:6px 0"></div><button onclick="savePaymentSettings()">Save Payment Settings</button><p id="paymentMsg" class="small"></p></div>
+<div class="grid2"><div class="panel"><h2>🍽️ Add Menu Item</h2><input id="n" placeholder="Name"><input id="p" type="number" placeholder="Price"><label><b>Product Image</b></label><div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0">
+<button type="button" onclick="imgFile.click()">📷 Camera</button>
+<button type="button" onclick="imgGallery.click()">🖼️ Gallery / Album</button>
+</div>
+<input id="imgFile" type="file" accept="image/*" capture="environment" onchange="previewProductImageFile()" style="display:none">
+<input id="imgGallery" type="file" accept="image/*" onchange="previewProductImageGallery()" style="display:none">
+<small style="display:block;color:#666;margin:5px 0">Camera ya Gallery/Album se photo select karo.</small><input id="img" type="url" placeholder="Ya image URL paste karo (optional)" oninput="previewProductImage()"><div id="productImagePreview" style="margin:6px 0"></div><textarea id="desc" placeholder="Description"></textarea><button onclick="addItem()">Add Item</button></div><div class="panel"><h2>Menu Management</h2><div id="list">Menu is ready.</div></div></div>
+<div class="panel"><h2>📦 Orders</h2><div id="orders">Orders are ready.</div></div>
+<div class="panel"><h2>👥 Customers</h2><p class="small">See registered customer email addresses, online status, and block or unblock accounts.</p><div id="customers">Customers are loading...</div></div>
+<div class="panel"><h2>💬 Customer Messages</h2><p class="small">Send an in-app message to any customer.</p><div id="customerMessages">Customers are loading...</div></div>
+<div class="panel"><h2>🚚 Order Chat</h2><p class="small">Reply to customers directly from their order tracking chat.</p><div id="orderChats">Order chats are loading...</div></div>
+<div class="panel"><h2>💰 Wallet Top-ups</h2><p class="small">Approve or reject customer wallet top-up requests after checking the UPI payment.</p><div id="walletTopups">Wallet requests are loading...</div></div>
+</div></div>
+<script>
+const cfg=window.DELHI6_CONFIG||{};
+const SB_URL=cfg.SUPABASE_URL||"https://qxktximeddpttcjkaumo.supabase.co";
+const SB_KEY=cfg.SUPABASE_ANON_KEY||"sb_publishable_mUL6OaOwJ649Xi68uQOcLw_9g0fM8mM";
+let db=null;
+const ADMIN_PASSWORD=cfg.ADMIN_PASSWORD||"Bilal@882664";
+function getDb(){if(!db){if(!window.supabase)throw Error("Supabase library did not load.");db=window.supabase.createClient(SB_URL,SB_KEY)}return db}function esc(v){return String(v??"").replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))}function money(n){return "₹"+Number(n||0).toLocaleString("en-IN")}
+function togglePassword(){const p=document.getElementById('password'),b=document.querySelector('.eye');p.type=p.type==='password'?'text':'password';b.textContent=p.type==='password'?'👁':'🙈'}
+function login(){
+const p=document.getElementById('password').value;
+const e=document.getElementById('loginError');
+
+if(p!==ADMIN_PASSWORD){e.textContent='Invalid admin password.';e.style.display='block';return}
+sessionStorage.setItem('delhi6_admin_logged_in','1');showApp()
+}
+document.getElementById('password').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+function showApp(){document.getElementById('login').style.display='none';document.getElementById('app').style.display='block';document.getElementById('logoutBtn').style.display='block';loadAll()}
+function logout(){sessionStorage.removeItem('delhi6_admin_logged_in');location.reload()}
+function defaultSettings(){return{brand:'Delhi 6 Hotel',heroTitle:'Delhi 6 Hotel',heroSub:'Fresh • Hot • Delicious Biryani',menuTitle:'Our Menu',contactTitle:'Visit Us',address:'Indra Park C12, Pali Factory, Uttam Nagar, New Delhi',phone:'+91 8750794831',primary:'#f4c400',dark:'#171717',wa:'918750794831',mapUrl:'',deliveryCharge:0,upiId:'8750794831@ptsbi',upiQrUrl:'',hotelImageUrl:'',hotelImages:[]}}
+function applySettings(c){const d={...defaultSettings(),...c};window._hotelImages=Array.isArray(d.hotelImages)?d.hotelImages.slice():[];for(const [id,key] of [['setBrand','brand'],['setHeroTitle','heroTitle'],['setHeroSub','heroSub'],['setMenuTitle','menuTitle'],['setContactTitle','contactTitle'],['setAddress','address'],['setPhone','phone'],['setPrimary','primary'],['setDark','dark'],['setWa','wa'],['deliveryCharge','deliveryCharge'],['upiId','upiId'],['upiQrUrl','upiQrUrl'],['hotelImageUrl','hotelImageUrl']]){const e=document.getElementById(id);if(e)e.value=d[key]??''}previewHotelImage();previewQr();renderSavedHotelGallery()}
+function getSettings(){return{brand:setBrand.value.trim(),heroTitle:setHeroTitle.value.trim(),heroSub:setHeroSub.value.trim(),menuTitle:setMenuTitle.value.trim(),contactTitle:setContactTitle.value.trim(),address:setAddress.value.trim(),phone:setPhone.value.trim(),primary:setPrimary.value,dark:setDark.value,wa:setWa.value.replace(/\D/g,''),mapUrl:'',deliveryCharge:Number(deliveryCharge.value||0),upiId:upiId.value.trim(),upiQrUrl:upiQrUrl.value.trim(),hotelImageUrl:hotelImageUrl.value.trim(),hotelImages:Array.isArray(window._hotelImages)?window._hotelImages.slice():[]}}
+async function loadSettings(){const r=await getDb().from('site_settings').select('map_url').eq('id',1).maybeSingle();let c=defaultSettings();try{if(r.data?.map_url?.trim().startsWith('{'))c={...c,...JSON.parse(r.data.map_url)}}catch(e){}applySettings(c)}
+async function saveSettings(){let c=getSettings(),r=await getDb().from('site_settings').upsert({id:1,map_url:JSON.stringify(c)});settingsMsg.textContent=r.error?'Save failed: '+r.error.message:'Website changes saved.'}
+async function resetSettings(){applySettings(defaultSettings());await saveSettings()}
+async function savePaymentSettings(){try{let c=getSettings(),f=(upiQrFile.files&&upiQrFile.files[0])||(upiQrGallery.files&&upiQrGallery.files[0]);if(f){paymentMsg.textContent='Uploading QR image...';c.upiQrUrl=await uploadImage(f,'upi-qr');upiQrUrl.value=c.upiQrUrl}let r=await getDb().from('site_settings').upsert({id:1,map_url:JSON.stringify(c)});paymentMsg.textContent=r.error?'Save failed: '+r.error.message:'Payment and delivery settings saved.';if(!r.error)previewQr()}catch(e){paymentMsg.textContent='Upload failed: '+(e.message||e)}}
+function renderSavedHotelGallery(){
+  const box=document.getElementById('hotelSavedGallery');
+  if(!box)return;
+  const imgs=Array.isArray(window._hotelImages)?window._hotelImages.filter(Boolean):[];
+  if(!imgs.length){box.innerHTML='<div style="color:#777;font-size:13px">No hotel photos saved.</div>';return}
+  box.innerHTML='<div style="font-weight:700;margin-bottom:6px">Saved Hotel Photos — '+imgs.length+'</div>'+imgs.map((u,i)=>`<div style="display:inline-block;vertical-align:top;margin:4px;text-align:center"><img src="${esc(u)}" style="width:120px;height:85px;object-fit:cover;border-radius:10px;border:1px solid #ddd"><button type="button" onclick="removeHotelPhoto(${i})" style="display:block;margin:5px auto 0;padding:5px 9px;border:0;border-radius:8px;background:#e53935;color:#fff;cursor:pointer">🗑️ Remove</button></div>`).join('');
+}
+function removeHotelPhoto(index){
+  const imgs=Array.isArray(window._hotelImages)?window._hotelImages.slice():[];
+  if(index<0||index>=imgs.length)return;
+  imgs.splice(index,1); window._hotelImages=imgs;
+  if(hotelImageUrl)hotelImageUrl.value=imgs[0]||'';
+  renderSavedHotelGallery();
+  hotelImageMsg.textContent='Photo removed. Click Save Hotel Photo(s) to confirm.';
+}
+function previewMoreHotelImages(){const files=Array.from(hotelImageMore.files||[]);if(!files.length){hotelMorePreview.innerHTML='';return}hotelMorePreview.innerHTML=files.map(f=>{const u=URL.createObjectURL(f);return `<div style=\"display:inline-block;margin:4px;text-align:center;vertical-align:top\"><img src=\"${u}\" style=\"width:110px;height:80px;object-fit:cover;border-radius:10px;border:1px solid #ddd\"><div style=\"font-size:12px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\">${esc(f.name)}</div></div>`}).join('')}
+function previewHotelImage(){const u=hotelImageUrl.value.trim();if(u)hotelImagePreview.innerHTML=`<img src="${esc(u)}" style="width:180px;height:110px;object-fit:cover;border-radius:12px;border:1px solid #ddd" onerror="this.style.display='none'"><br><a href="${esc(u)}" target="_blank">Open image</a>`;else if(!(hotelImageFile.files&&hotelImageFile.files[0]))hotelImagePreview.innerHTML=''}
+function previewHotelImageFile(){const f=(hotelImageFile.files&&hotelImageFile.files[0])||(hotelImageGallery.files&&hotelImageGallery.files[0]);if(!f)return;const u=URL.createObjectURL(f);hotelImagePreview.innerHTML=`<img src="${u}" style="width:180px;height:110px;object-fit:cover;border-radius:12px;border:1px solid #ddd"><div style="margin-top:5px">${esc(f.name)}</div>`}
+function previewHotelImageGallery(){previewHotelImageFile()}
+function previewQr(){const u=upiQrUrl.value.trim();if(u)upiQrPreview.innerHTML=`<img src="${esc(u)}" style="width:150px;height:150px;object-fit:contain;border-radius:12px;border:1px solid #ddd;background:#fff" onerror="this.style.display='none'"><br><a href="${esc(u)}" target="_blank">Open QR image</a>`;else if(!(upiQrFile.files&&upiQrFile.files[0]))upiQrPreview.innerHTML=''}
+function previewQrFile(){const f=(upiQrFile.files&&upiQrFile.files[0])||(upiQrGallery.files&&upiQrGallery.files[0]);if(!f)return;const u=URL.createObjectURL(f);upiQrPreview.innerHTML=`<img src="${u}" style="width:150px;height:150px;object-fit:contain;border-radius:12px;border:1px solid #ddd;background:#fff"><div style="margin-top:5px">${esc(f.name)}</div>`}
+function previewQrGallery(){previewQrFile()}
+async function saveHotelImage(){
+  try{
+    let u=hotelImageUrl.value.trim();
+    const f=(hotelImageFile.files&&hotelImageFile.files[0])||(hotelImageGallery.files&&hotelImageGallery.files[0]);
+    const more=Array.from(hotelImageMore?.files||[]);
+    if(f){hotelImageMsg.textContent='Uploading hotel photo...';u=await uploadImage(f,'hotel');hotelImageUrl.value=u}
+    let imgs=Array.isArray(window._hotelImages)?window._hotelImages.slice():[];
+    if(u&&!imgs.includes(u))imgs.push(u);
+    for(const mf of more){hotelImageMsg.textContent='Uploading additional photo...';const mu=await uploadImage(mf,'hotel');if(mu&&!imgs.includes(mu))imgs.push(mu)}
+    window._hotelImages=imgs;
+    const c=getSettings(); c.hotelImages=imgs; c.hotelImageUrl=imgs[0]||''; hotelImageUrl.value=c.hotelImageUrl;
+    const r=await getDb().from('site_settings').upsert({id:1,map_url:JSON.stringify(c)});
+    hotelImageMsg.textContent=r.error?'Save failed: '+r.error.message:'Hotel photos saved successfully. Customer slider will show all photos.';
+    if(!r.error){renderSavedHotelGallery();previewHotelImage();if(hotelImageMore)hotelImageMore.value='';if(hotelMorePreview)hotelMorePreview.innerHTML=''}
+  }catch(e){hotelImageMsg.textContent='Upload failed: '+(e.message||String(e))}
+}
+async function compressImage(file){
+  try{
+    if(!file||!file.type||!file.type.startsWith('image/')) return file;
+    return await new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=()=>{
+        const im=new Image();
+        im.onload=()=>{
+          try{
+            const max=1600,scale=Math.min(1,max/Math.max(im.width,im.height));
+            const c=document.createElement('canvas'); c.width=Math.max(1,Math.round(im.width*scale)); c.height=Math.max(1,Math.round(im.height*scale));
+            const x=c.getContext('2d'); x.drawImage(im,0,0,c.width,c.height);
+            c.toBlob(b=>b?resolve(b):resolve(file),'image/jpeg',0.82);
+          }catch(err){resolve(file)}
+        };
+        im.onerror=()=>resolve(file);
+        im.src=reader.result;
+      };
+      reader.onerror=()=>resolve(file);
+      reader.readAsDataURL(file);
+    });
+  }catch(err){return file}
+}
+async function uploadImage(file,folder){
+  const blob=await compressImage(file);
+  const isJpeg=blob.type==='image/jpeg';
+  const ext=isJpeg?'jpg':((file.name||'image.jpg').split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
+  const contentType=blob.type || file.type || 'application/octet-stream';
+  const path=folder+'/'+Date.now()+'-'+Math.random().toString(36).slice(2)+'.'+ext;
+  const r=await getDb().storage.from('delhi6-images').upload(path,blob,{contentType,upsert:false});
+  if(r.error)throw new Error(r.error.message||'Storage upload failed');
+  return getDb().storage.from('delhi6-images').getPublicUrl(r.data.path).data.publicUrl;
+}
+async function uploadProductImage(file){return uploadImage(file,'products')}
+async function addItem(){if(!n.value.trim()||!p.value)return alert('Name and price are required.');let imageUrl=img.value.trim();const f=(imgFile.files&&imgFile.files[0])||(imgGallery.files&&imgGallery.files[0]);if(f){try{productImagePreview.innerHTML='<small>Uploading image...</small>';imageUrl=await uploadProductImage(f);img.value=imageUrl;productImagePreview.innerHTML='<img src="'+esc(imageUrl)+'" style="width:120px;height:120px;object-fit:cover;border-radius:12px;border:1px solid #ddd"><div style="margin-top:5px">Uploaded successfully</div>'}catch(e){return alert('Image upload failed: '+(e.message||e))}}const r=await getDb().from('menu_items').insert({name:n.value.trim(),price:Number(p.value),image_url:imageUrl,description:desc.value.trim(),available:true});if(r.error)alert(r.error.message);else{n.value='';p.value='';img.value='';imgFile.value='';productImagePreview.innerHTML='';desc.value='';loadMenu()}}
+async function editItem(id,k,v){const o={};o[k]=k==='price'?Number(v):v;const r=await getDb().from('menu_items').update(o).eq('id',id);if(r.error)alert(r.error.message)}async function toggleItem(id,current){const r=await getDb().from('menu_items').update({available:!current}).eq('id',id);if(r.error)alert(r.error.message);else loadMenu()}async function deleteItem(id){if(!confirm('Delete this menu item?'))return;const r=await getDb().from('menu_items').delete().eq('id',id);if(r.error)alert(r.error.message);else loadMenu()}
+async function loadOrders(){const r=await getDb().rpc('admin_list_orders',{p_password:ADMIN_PASSWORD});if(r.error){orders.textContent='Unable to load orders: '+r.error.message;return}orders.innerHTML=(r.data||[]).map(o=>{const items=(o.cart||[]).map(x=>`${esc(x.name)} × ${x.qty||1}`).join(', ');return `<div class="order"><b>Order:</b> ${esc(o.id)}<br><b>${esc(o.customer_name)}</b> • ${esc(o.phone)}<br>📍 ${esc(o.address)}<br>🍽️ ${items}<br>💰 ${money(o.total)} • ${esc(o.payment_method||'Cash on Delivery')}<br><span class="small">${new Date(o.created_at).toLocaleString('en-IN')}</span><br><select class="status" onchange="setStatus('${o.id}',this.value)"><option ${o.status==='Pending'?'selected':''}>Pending</option><option ${o.status==='Confirmed'?'selected':''}>Confirmed</option><option ${o.status==='Packed'?'selected':''}>Packed</option><option ${o.status==='Out for Delivery'?'selected':''}>Out for Delivery</option><option ${o.status==='Delivered'?'selected':''}>Delivered</option><option ${o.status==='Cancelled'?'selected':''}>Cancelled</option></select> <button class="danger" onclick="deleteOrder('${o.id}')">Delete Order</button></div>`}).join('')||'No orders.'}
+async function setStatus(id,status){const r=await getDb().rpc('admin_update_order_status',{p_password:ADMIN_PASSWORD,p_order_id:String(id),p_status:status});if(r.error)alert(r.error.message);else{loadOrders();loadOrderChats()}}async function deleteOrder(id){if(!confirm('Delete this order permanently?'))return;const r=await getDb().rpc('admin_delete_order',{p_password:ADMIN_PASSWORD,p_order_id:String(id)});if(r.error)alert(r.error.message);else loadOrders()}
+async function loadCustomers(){const r=await getDb().rpc('admin_list_customers',{p_password:ADMIN_PASSWORD});if(r.error){customers.textContent='Unable to load customers: '+r.error.message;return}customers.innerHTML=(r.data||[]).map(c=>`<div class="customer ${c.blocked?'blocked':''}"><div class="customerHead"><div><b>${esc(c.email||'No email')}</b><br><span class="small">${c.online?'🟢 Online':'⚪ Offline'} • Created: ${new Date(c.created_at).toLocaleString('en-IN')}${c.last_sign_in_at?' • Last sign-in: '+new Date(c.last_sign_in_at).toLocaleString('en-IN'):''}</span></div><button onclick="toggleBlock('${c.user_id}',${!!c.blocked})">${c.blocked?'Unblock':'Block'}</button></div></div>`).join('')||'No customers.'}
+async function toggleBlock(uid,blocked){if(!confirm((blocked?'Unblock':'Block')+' this customer?'))return;const r=await getDb().rpc('admin_set_customer_block',{p_password:ADMIN_PASSWORD,p_user_id:uid,p_blocked:!blocked});if(r.error)alert(r.error.message);else loadCustomers()}
+async function sendCustomerMessage(uid){const input=document.getElementById('msg_'+uid),text=input.value.trim();if(!text)return;const r=await getDb().rpc('admin_send_customer_message',{p_password:ADMIN_PASSWORD,p_user_id:uid,p_message:text});if(r.error)alert(r.error.message);else{input.value='';loadCustomerMessages()}}
+async function deleteCustomerMessage(id){if(!confirm('Delete this message permanently?'))return;const r=await getDb().rpc('admin_delete_customer_message',{p_message_id:Number(id),p_password:ADMIN_PASSWORD});if(r.error){alert(r.error.message);return}closeNewMessagePopup();loadCustomerMessages()}
+let adminLastMessageId=Number(localStorage.getItem('delhi6_admin_last_msg_id')||0);
+let adminMessageInitialized=false;
+function closeNewMessagePopup(){document.getElementById('newMessagePopup')?.classList.remove('show')}
+function showNewCustomerMessage(m){
+  const p=document.getElementById('newMessagePopup');if(!p)return;
+  document.getElementById('newMessageMeta').innerHTML='<b>'+esc(m.customer_name||'Customer')+'</b><br>📧 '+esc(m.email||'No email')+'<br>🆔 Order: '+esc(m.order_id||'No order')+'<br><span class="small">'+new Date(m.created_at).toLocaleString('en-IN')+'</span>';
+  document.getElementById('newMessageText').textContent=m.message||'';
+  p.classList.add('show');
+}
+async function loadCustomerMessages(){
+  const r=await getDb().rpc('admin_list_customer_messages',{p_password:ADMIN_PASSWORD});
+  if(r.error){customerMessages.textContent='Unable to load messages: '+r.error.message;return}
+  const rows=r.data||[];
+  if(!adminMessageInitialized){
+    adminLastMessageId=rows.reduce((mx,m)=>Math.max(mx,Number(m.id)||0),adminLastMessageId);
+    localStorage.setItem('delhi6_admin_last_msg_id',String(adminLastMessageId));
+    adminMessageInitialized=true;
+  }else{
+    const fresh=rows.filter(m=>Number(m.id)>adminLastMessageId&&m.sender==='customer').sort((x,y)=>Number(x.id)-Number(y.id));
+    if(fresh.length){adminLastMessageId=Math.max(...fresh.map(m=>Number(m.id)));localStorage.setItem('delhi6_admin_last_msg_id',String(adminLastMessageId));showNewCustomerMessage(fresh[fresh.length-1]);}
+  }
+  const list=rows.map(m=>`<div class="chatItem"><b>👤 ${esc(m.customer_name||'Customer')}</b><br>📧 ${esc(m.email||'No email')}<br>🆔 Order: ${esc(m.order_id||'No order')}<br><span class="small">${new Date(m.created_at).toLocaleString('en-IN')}</span><div class="chatMsg ${m.sender==='customer'?'customer':'admin'}"><b>${m.sender==='customer'?'Customer':'Hotel'}</b>: ${esc(m.message)}</div>${m.sender==='customer'?`<div class="chatRow"><input id="msg_${m.user_id}" maxlength="2000" placeholder="Reply to this customer"><button onclick="sendCustomerMessage('${m.user_id}')">Send</button><button class="danger" onclick="deleteCustomerMessage(${m.id})">🗑️ Delete</button></div>`:`<div class="chatRow"><button class="danger" onclick="deleteCustomerMessage(${m.id})">🗑️ Delete</button></div>`}</div>`).join('');
+  customerMessages.innerHTML=list||'No customer messages yet.';
+}
+async function loadOrderChats(){const r=await getDb().rpc('admin_list_order_chats',{p_password:ADMIN_PASSWORD});if(r.error){orderChats.textContent='Unable to load chats: '+r.error.message;return}const groups={};(r.data||[]).forEach(m=>(groups[m.order_id]??=[]).push(m));orderChats.innerHTML=Object.entries(groups).map(([oid,msgs])=>{const last=msgs[msgs.length-1];return `<div class="chatItem"><b>Order ${esc(oid)}</b> • ${esc(last.order_status)}<div class="chatList">${msgs.map(m=>`<div class="chatMsg ${m.sender==='customer'?'customer':'admin'}"><b>${m.sender==='customer'?'Customer':'Hotel'}</b>: ${esc(m.message)}<div class="small">${new Date(m.created_at).toLocaleString('en-IN')}</div></div>`).join('')}</div><div class="chatRow"><input id="chat_${oid}" placeholder="Reply to this order"><button onclick="sendOrderChatAdmin('${oid}')">Send</button></div></div>`}).join('')||'No order chat messages yet.'}
+async function sendOrderChatAdmin(oid){const input=document.getElementById('chat_'+oid),text=input.value.trim();if(!text)return;const r=await getDb().rpc('admin_send_order_chat',{p_password:ADMIN_PASSWORD,p_order_id:oid,p_message:text});if(r.error)alert(r.error.message);else{input.value='';loadOrderChats()}}
+async function loadWalletTopups(){const r=await getDb().rpc('admin_list_wallet_topups',{p_password:ADMIN_PASSWORD});if(r.error){walletTopups.textContent='Unable to load wallet requests: '+r.error.message;return}walletTopups.innerHTML=(r.data||[]).map(t=>`<div class="walletItem"><b>${esc(t.email)}</b><br>Amount: ${money(t.amount)}<br>Status: ${esc(t.status)}${t.reference?'<br>Reference: '+esc(t.reference):''}<br><span class="small">${new Date(t.created_at).toLocaleString('en-IN')}</span>${t.status==='Pending'?`<br><button onclick="approveWallet(${t.id},'Approved')">Approve</button> <button class="danger" onclick="approveWallet(${t.id},'Rejected')">Reject</button>`:''}</div>`).join('')||'No wallet top-up requests.'}
+async function approveWallet(id,status){const r=await getDb().rpc('admin_approve_wallet_topup',{p_password:ADMIN_PASSWORD,p_id:id,p_status:status});if(r.error)alert(r.error.message);else loadWalletTopups()}
+async function loadAll(){try{await Promise.all([loadSettings(),loadMenu(),loadOrders(),loadCustomers(),loadCustomerMessages(),loadOrderChats(),loadWalletTopups()])}catch(e){console.error(e)}}
+if(sessionStorage.getItem('delhi6_admin_logged_in')==='1')showApp();setInterval(()=>{if(sessionStorage.getItem('delhi6_admin_logged_in')==='1'){loadOrders();loadCustomers();loadCustomerMessages();loadOrderChats();loadWalletTopups()}},5000);
+</script></body></html>
