@@ -119,7 +119,7 @@ function showAuth(user){
   document.body.classList.toggle("loginGateMode",!user);
   const box=document.getElementById("myOrders"),tracker=document.getElementById("tracker"),msgs=document.getElementById("myMessages");
   document.querySelectorAll("[data-private]").forEach(x=>x.style.display=user?"block":"none");
-  if(!user){if(box)box.style.display="none";if(msgs)msgs.style.display="none";if(tracker)tracker.style.display="none";}
+  if(!user){if(box)box.style.display="none";if(msgs)msgs.style.display="none";if(tracker)tracker.style.display="none";localStorage.removeItem("delhi6_order_id");localStorage.removeItem("delhi6_order_phone");}
   const out=document.getElementById("authLoggedOut"),inn=document.getElementById("authLoggedIn"),txt=document.getElementById("authUserText");
   if(user){out.style.display="none";inn.style.display="block";txt.textContent="Logged in: "+(user.email||"Google account");if(user.email)document.getElementById("authEmail").value=user.email;loadMyOrders();loadGeneralMessages();showTracker();refreshCustomerRules();}
   else{out.style.display="flex";inn.style.display="none";customerAllowedPayments=["Cash on Delivery","UPI","Wallet"];updatePaymentOptions();}
@@ -405,7 +405,7 @@ async function placeOrder(){
 }
 const statusSteps=["Pending","Confirmed","Packed","Out for Delivery","Delivered"];
 function statusIndex(status){if(status==="Cancelled")return -1;let i=statusSteps.indexOf(status);return i<0?0:i}
-function updateTracker(status,total,created){const tracker=document.getElementById("tracker"),text=document.getElementById("trackerText"),cancel=document.getElementById("cancelOrderBtn"),ref=document.getElementById("orderRef");if(!tracker)return;tracker.style.display="block";let idx=statusIndex(status);document.querySelectorAll(".step").forEach((el,i)=>{el.classList.remove("active","done");if(status!=="Cancelled"&&i<idx)el.classList.add("done");if(status!=="Cancelled"&&i===idx)el.classList.add("active")});const messages={Pending:"Your order has been received.",Confirmed:"Your order has been confirmed.",Packed:"Your order is being packed.","Out for Delivery":"Your order is out for delivery.",Delivered:"Your order has been delivered.",Cancelled:"Your order has been cancelled."};text.innerHTML=`<b>${esc(messages[status]||status)}</b>${total!=null?`<br>Total: ${money(total)}`:""}`;cancel.style.display=(status==="Pending"||status==="Confirmed")?"inline-block":"none";if(status==="Cancelled")cancel.disabled=true;if(ref)ref.textContent="Order ID: "+(localStorage.getItem("delhi6_order_id")||"")+(created?" • "+new Date(created).toLocaleString("en-IN"):"");if(status==="Delivered"){localStorage.removeItem("delhi6_order_id");localStorage.removeItem("delhi6_order_phone");tracker.style.display="none";const live=document.getElementById("deliveryBoyLive");if(live)live.style.display="none"}}
+function updateTracker(status,total,created){const tracker=document.getElementById("tracker"),text=document.getElementById("trackerText"),cancel=document.getElementById("cancelOrderBtn"),ref=document.getElementById("orderRef");if(!tracker)return;tracker.style.display="block";let idx=statusIndex(status);document.querySelectorAll(".step").forEach((el,i)=>{el.classList.remove("active","done");if(status!=="Cancelled"&&i<idx)el.classList.add("done");if(status!=="Cancelled"&&i===idx)el.classList.add("active")});const messages={Pending:"Your order has been received.",Confirmed:"Your order has been confirmed.",Packed:"Your order is being packed.","Out for Delivery":"Your order is out for delivery.",Delivered:"Your order has been delivered.",Cancelled:"Your order has been cancelled."};text.innerHTML=`<b>${esc(messages[status]||status)}</b>${total!=null?`<br>Total: ${money(total)}`:""}`;cancel.style.display=(status==="Pending"||status==="Confirmed")?"inline-block":"none";if(status==="Cancelled")cancel.disabled=true;if(ref)ref.textContent="Order ID: "+(localStorage.getItem("delhi6_order_id")||"")+(created?" • "+new Date(created).toLocaleString("en-IN"):"")}
 async function loadDeliveryBoyLiveLocation(orderId,phone){
   const box=document.getElementById("deliveryBoyLive");
   if(!box)return;
@@ -428,21 +428,7 @@ async function loadDeliveryBoyLiveLocation(orderId,phone){
     box.style.display="none";
   }
 }
-async function showTracker(){
-const {data:sessionData}=await db.auth.getSession();
-if(!sessionData?.session?.user){document.getElementById("tracker").style.display="none";return}
-const id=localStorage.getItem("delhi6_order_id"),phone=localStorage.getItem("delhi6_order_phone");
-if(!id||!phone){document.getElementById("tracker").style.display="none";return}
-try{
-let {data,error}=await db.rpc("get_order_status",{p_order_id:id,p_phone:phone});
-if(error)throw error;
-let row=Array.isArray(data)?data[0]:data;
-if(!row){document.getElementById("tracker").style.display="none";return}
-updateTracker(row.status||"Pending",row.total,row.created_at);
-loadOrderChat();
-await loadDeliveryBoyLiveLocation(id,phone);
-}catch(e){document.getElementById("tracker").style.display="none"}
-}
+async function showTracker(){const {data:sessionData}=await db.auth.getSession();if(!sessionData?.session?.user){document.getElementById("tracker").style.display="none";return}const id=localStorage.getItem("delhi6_order_id"),phone=localStorage.getItem("delhi6_order_phone");if(!id||!phone){document.getElementById("tracker").style.display="none";return}try{let {data,error}=await db.rpc("get_order_status",{p_order_id:id,p_phone:phone});if(error)throw error;let row=Array.isArray(data)?data[0]:data;if(!row){document.getElementById("tracker").style.display="none";return}updateTracker(row.status||"Pending",row.total,row.created_at);loadOrderChat();loadDeliveryBoyLiveLocation(id,phone)}catch(e){document.getElementById("tracker").style.display="none"}}
 async function cancelMyOrder(){const id=localStorage.getItem("delhi6_order_id"),phone=localStorage.getItem("delhi6_order_phone");if(!id||!phone)return;if(!confirm("Cancel this order?"))return;let {data,error}=await db.rpc("cancel_order",{p_order_id:id,p_phone:phone});if(error)return alert("Unable to cancel: "+error.message);let status=Array.isArray(data)?data[0]?.status:data;if(status==="Cancelled"){updateTracker("Cancelled");alert("Order cancelled.")}else{updateTracker(status||"Pending");alert("This order can no longer be cancelled because processing has started.")}}
 async function loadGeneralMessages(){const box=document.getElementById("myMessages"),list=document.getElementById("myMessagesList"),badge=document.getElementById("messageBadge");if(!box||!list)return;let {data,error}=await db.rpc("get_my_messages");if(error){list.innerHTML='<div class="muted">Unable to load messages.</div>';return}renderMessageList(list,data||[]);if(badge){const unread=(data||[]).filter(m=>m.sender==='admin').length;badge.textContent=unread;badge.style.display=unread?'inline-block':'none'}const floatBadge=document.getElementById("chatFloatBadge");if(floatBadge){const unread=(data||[]).filter(m=>m.sender==='admin').length;floatBadge.textContent=unread;floatBadge.style.display=unread?'block':'none'}}
 function renderMessageList(list,data){list.innerHTML=(data||[]).map(m=>`<div class="chatMsg ${m.sender==='customer'?'customer':'admin'}"><b>${m.sender==='admin'?'Hotel':'You'}</b><br>${esc(m.message)}<div style="font-size:10px;opacity:.65;margin-top:3px">${new Date(m.created_at).toLocaleString('en-IN')}</div></div>`).join('')||'<div class="muted">No messages yet.</div>';list.scrollTop=list.scrollHeight}
