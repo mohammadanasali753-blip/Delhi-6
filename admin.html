@@ -146,7 +146,34 @@ async function loadMenu(){
   const rows=r.data||[];
   list.innerHTML=rows.map(m=>`<div class="order" style="margin-bottom:10px"><b>${esc(m.name)}</b> • ${money(m.price)}<br><span class="small">${esc(m.description||'')}</span><br><button type="button" class="danger" onclick="deleteItem('${m.id}')">🗑️ Delete Menu Item</button></div>`).join('')||'No menu items.';
 }
-async function addItem(){if(!n.value.trim()||!p.value)return alert('Name and price are required.');let imageUrl=img.value.trim();const f=(imgFile.files&&imgFile.files[0])||(imgGallery.files&&imgGallery.files[0]);if(f){try{productImagePreview.innerHTML='<small>Uploading image...</small>';imageUrl=await uploadProductImage(f);img.value=imageUrl;productImagePreview.innerHTML='<img src="'+esc(imageUrl)+'" style="width:120px;height:120px;object-fit:cover;border-radius:12px;border:1px solid #ddd"><div style="margin-top:5px">Uploaded successfully</div>'}catch(e){return alert('Image upload failed: '+(e.message||e))}}const r=await getDb().from('menu_items').insert({name:n.value.trim(),price:Number(p.value),image_url:imageUrl,description:desc.value.trim(),available:true});if(r.error)alert(r.error.message);else{n.value='';p.value='';img.value='';imgFile.value='';productImagePreview.innerHTML='';desc.value='';loadMenu()}}
+function previewProductImage(){const u=document.getElementById("img")?.value.trim();const box=document.getElementById("productImagePreview");if(!box)return;if(u)box.innerHTML=`<img src="${esc(u)}" style="width:120px;height:120px;object-fit:cover;border-radius:12px;border:1px solid #ddd" onerror="this.style.display=\'none\'">`;else box.innerHTML=""}
+function previewProductImageFile(){const f=document.getElementById("imgFile")?.files?.[0];if(!f)return;const box=document.getElementById("productImagePreview");if(box)box.innerHTML=`<img src="${URL.createObjectURL(f)}" style="width:120px;height:120px;object-fit:cover;border-radius:12px;border:1px solid #ddd"><div style="margin-top:5px">${esc(f.name)}</div>`}
+function previewProductImageGallery(){const f=document.getElementById("imgGallery")?.files?.[0];if(!f)return;const box=document.getElementById("productImagePreview");if(box)box.innerHTML=`<img src="${URL.createObjectURL(f)}" style="width:120px;height:120px;object-fit:cover;border-radius:12px;border:1px solid #ddd"><div style="margin-top:5px">${esc(f.name)}</div>`}
+async function addItem(){
+  const nameEl=document.getElementById("n"), priceEl=document.getElementById("p"), imgEl=document.getElementById("img"), descEl=document.getElementById("desc");
+  const fileEl=document.getElementById("imgFile"), galleryEl=document.getElementById("imgGallery"), preview=document.getElementById("productImagePreview");
+  const name=nameEl.value.trim(), price=Number(priceEl.value), descText=descEl.value.trim();
+  if(!name||!price)return alert("Name and price are required.");
+  let imageUrl=imgEl.value.trim();
+  const f=fileEl.files?.[0]||galleryEl.files?.[0];
+  try{
+    if(f){
+      preview.innerHTML="<b>Uploading product image...</b>";
+      imageUrl=await uploadProductImage(f);
+      imgEl.value=imageUrl;
+      preview.innerHTML=`<img src="${esc(imageUrl)}" style="width:120px;height:120px;object-fit:cover;border-radius:12px;border:1px solid #ddd"><div style="margin-top:5px">✅ Image uploaded</div>`;
+    }
+    const r=await getDb().from("menu_items").insert({name,price,image_url:imageUrl,description:descText,available:true});
+    if(r.error)throw new Error(r.error.message);
+    alert("✅ Menu item added successfully");
+    nameEl.value="";priceEl.value="";imgEl.value="";fileEl.value="";galleryEl.value="";descEl.value="";preview.innerHTML="";
+    await loadMenu();
+  }catch(e){
+    console.error(e);
+    alert("❌ Product add/upload failed: "+(e?.message||e));
+  }
+}
+
 async function editItem(id,k,v){const o={};o[k]=k==='price'?Number(v):v;const r=await getDb().from('menu_items').update(o).eq('id',id);if(r.error)alert(r.error.message)}async function deleteItem(id){if(!confirm('Delete this menu item?'))return;const r=await getDb().from('menu_items').delete().eq('id',id);if(r.error)alert(r.error.message);else loadMenu()}
 async function loadOrders(){const r=await getDb().rpc('admin_list_orders',{p_password:ADMIN_PASSWORD});if(r.error){orders.textContent='Unable to load orders: '+r.error.message;return}orders.innerHTML=(r.data||[]).map(o=>{const items=(o.cart||[]).map(x=>`${esc(x.name)} × ${x.qty||1}`).join(', ');return `<div class="order"><b>Order:</b> ${esc(o.id)}<br><b>${esc(o.customer_name)}</b> • ${esc(o.phone)}<br>📍 ${esc(o.address)}<br>🍽️ ${items}<br>💰 ${money(o.total)} • ${esc(o.payment_method||'Cash on Delivery')}<br><span class="small">${new Date(o.created_at).toLocaleString('en-IN')}</span><br><select class="status" onchange="setStatus('${o.id}',this.value)"><option ${o.status==='Pending'?'selected':''}>Pending</option><option ${o.status==='Confirmed'?'selected':''}>Confirmed</option><option ${o.status==='Packed'?'selected':''}>Packed</option><option ${o.status==='Out for Delivery'?'selected':''}>Out for Delivery</option><option ${o.status==='Delivered'?'selected':''}>Delivered</option><option ${o.status==='Cancelled'?'selected':''}>Cancelled</option></select> <button class="danger" onclick="deleteOrder('${o.id}')">Delete Order</button></div>`}).join('')||'No orders.'}
 async function setStatus(id,status){const r=await getDb().rpc('admin_update_order_status',{p_password:ADMIN_PASSWORD,p_order_id:String(id),p_status:status});if(r.error)alert(r.error.message);else{loadOrders();loadOrderChats()}}async function deleteOrder(id){if(!confirm('Delete this order permanently?'))return;const r=await getDb().rpc('admin_delete_order',{p_password:ADMIN_PASSWORD,p_order_id:String(id)});if(r.error)alert(r.error.message);else loadOrders()}
