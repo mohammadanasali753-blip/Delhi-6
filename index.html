@@ -117,7 +117,7 @@ function showAuth(user){
   document.body.classList.toggle("loginGateMode",!user);
   const box=document.getElementById("myOrders"),tracker=document.getElementById("tracker"),msgs=document.getElementById("myMessages");
   document.querySelectorAll("[data-private]").forEach(x=>x.style.display=user?"block":"none");
-  if(!user){if(box)box.style.display="none";if(msgs)msgs.style.display="none";if(tracker)tracker.style.display="none";localStorage.removeItem("delhi6_order_id");localStorage.removeItem("delhi6_order_phone");}
+  if(!user){if(box)box.style.display="none";if(msgs)msgs.style.display="none";if(tracker){const hasOrder=!!localStorage.getItem("delhi6_order_id")&&!!localStorage.getItem("delhi6_order_phone");tracker.style.display=hasOrder?"block":"none";}}
   const out=document.getElementById("authLoggedOut"),inn=document.getElementById("authLoggedIn"),txt=document.getElementById("authUserText");
   if(user){out.style.display="none";inn.style.display="block";txt.textContent="Logged in: "+(user.email||"Google account");if(user.email)document.getElementById("authEmail").value=user.email;loadMyOrders();loadGeneralMessages();showTracker();refreshCustomerRules();}
   else{out.style.display="flex";inn.style.display="none";customerAllowedPayments=["Cash on Delivery","UPI","Wallet"];updatePaymentOptions();}
@@ -407,22 +407,22 @@ async function placeOrder(){
 }
 const statusSteps=["Pending","Confirmed","Packed","Out for Delivery","Delivered"];
 function statusIndex(status){if(status==="Cancelled")return -1;let i=statusSteps.indexOf(status);return i<0?0:i}
-function updateTracker(status,total,created){const tracker=document.getElementById("tracker"),text=document.getElementById("trackerText"),cancel=document.getElementById("cancelOrderBtn"),ref=document.getElementById("orderRef");if(!tracker)return;tracker.style.display="block";let idx=statusIndex(status);document.querySelectorAll(".step").forEach((el,i)=>{el.classList.remove("active","done");if(status!=="Cancelled"&&i<idx)el.classList.add("done");if(status!=="Cancelled"&&i===idx)el.classList.add("active")});const messages={Pending:"Your order has been received.",Confirmed:"Your order has been confirmed.",Packed:"Your order is being packed.","Out for Delivery":"Your order is out for delivery.",Delivered:"Your order has been delivered.",Cancelled:"Your order has been cancelled."};text.innerHTML=`<b>${esc(messages[status]||status)}</b>${total!=null?`<br>Total: ${money(total)}`:""}`;cancel.style.display=(status==="Pending"||status==="Confirmed")?"inline-block":"none";if(status==="Cancelled")cancel.disabled=true;if(ref)ref.textContent="Order ID: "+(localStorage.getItem("delhi6_order_id")||"")+(created?" • "+new Date(created).toLocaleString("en-IN"):"")}
+function updateTracker(status,total,created){const tracker=document.getElementById("tracker"),text=document.getElementById("trackerText"),cancel=document.getElementById("cancelOrderBtn"),ref=document.getElementById("orderRef"),live=document.getElementById("trackerLive");if(!tracker)return;tracker.style.display="block";let idx=statusIndex(status);document.querySelectorAll(".step").forEach((el,i)=>{el.classList.remove("active","done");if(status!=="Cancelled"&&i<idx)el.classList.add("done");if(status!=="Cancelled"&&i===idx)el.classList.add("active")});const messages={Pending:"Your order has been received.",Confirmed:"Your order has been confirmed.",Packed:"Your order is being packed.","Out for Delivery":"Your order is out for delivery.",Delivered:"Your order has been delivered.",Cancelled:"Your order has been cancelled."};text.innerHTML=`<b>${esc(messages[status]||status)}</b>${total!=null?`<br>Total: ${money(total)}`:""}`;cancel.style.display=(status==="Pending"||status==="Confirmed")?"inline-block":"none";if(status==="Cancelled")cancel.disabled=true;if(live)live.textContent=status==="Delivered"?"✅ Order delivered":"🟢 Live status updates enabled";if(ref)ref.textContent="Order ID: "+(localStorage.getItem("delhi6_order_id")||"")+(created?" • "+new Date(created).toLocaleString("en-IN"):"");if(status==="Delivered"){setTimeout(()=>{localStorage.removeItem("delhi6_order_id");localStorage.removeItem("delhi6_order_phone");if(tracker)tracker.style.display="none"},1500)}}
 async function showTracker(){
   const tracker=document.getElementById("tracker");
   const live=document.getElementById("trackerLive");
-  const {data:sessionData}=await db.auth.getSession();
-  if(!sessionData?.session?.user){
-    if(tracker)tracker.style.display="none";
-    return;
-  }
   const id=localStorage.getItem("delhi6_order_id"),phone=localStorage.getItem("delhi6_order_phone");
   if(!id||!phone){
     if(tracker)tracker.style.display="none";
     return;
   }
-  // Keep the tracker visible as soon as an order has been placed.
+  // Keep the active order tracker visible across back/forward navigation and page reloads.
   if(tracker)tracker.style.display="block";
+  const {data:sessionData}=await db.auth.getSession();
+  if(!sessionData?.session?.user){
+    if(live)live.textContent="🔐 Please log in to view live status";
+    return;
+  }
   if(live)live.textContent="🔄 Checking latest order status...";
   try{
     const {data,error}=await db.rpc("get_order_status",{p_order_id:id,p_phone:phone});
@@ -457,6 +457,8 @@ async function loadOrderChat(){const id=localStorage.getItem("delhi6_order_id"),
 async function sendOrderChat(){const input=document.getElementById("orderChatInput"),id=localStorage.getItem("delhi6_order_id"),text=(input?.value||'').trim();if(!id||!text)return;const {error}=await db.rpc("send_order_chat",{p_order_id:id,p_message:text});if(error)return alert(error.message);input.value='';loadOrderChat()}
 document.getElementById("chatPopupInput")?.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendPopupMessage()}});
 document.getElementById("messageInput")?.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendGeneralMessage()}});
+window.addEventListener("pageshow",()=>{showTracker();initCustomerAuth()});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")showTracker()});
 setInterval(()=>{const p=document.getElementById("chatPopup");if(p?.classList.contains("open"))loadPopupMessages()},5000);
 setInterval(showTracker,5000);
 
