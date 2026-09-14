@@ -375,6 +375,10 @@ async function placeOrder(){
   if(!orderId)return alert("Order placed, but the tracking ID was not returned. Please contact the hotel.");
   localStorage.setItem("delhi6_order_id",orderId);
   localStorage.setItem("delhi6_order_phone",p);
+  // Show tracking immediately after the order is created.
+  const trackerNow=document.getElementById("tracker");
+  if(trackerNow)trackerNow.style.display="block";
+  showTracker();
 
   if(pay==="UPI"){
     try{
@@ -405,31 +409,34 @@ const statusSteps=["Pending","Confirmed","Packed","Out for Delivery","Delivered"
 function statusIndex(status){if(status==="Cancelled")return -1;let i=statusSteps.indexOf(status);return i<0?0:i}
 function updateTracker(status,total,created){const tracker=document.getElementById("tracker"),text=document.getElementById("trackerText"),cancel=document.getElementById("cancelOrderBtn"),ref=document.getElementById("orderRef");if(!tracker)return;tracker.style.display="block";let idx=statusIndex(status);document.querySelectorAll(".step").forEach((el,i)=>{el.classList.remove("active","done");if(status!=="Cancelled"&&i<idx)el.classList.add("done");if(status!=="Cancelled"&&i===idx)el.classList.add("active")});const messages={Pending:"Your order has been received.",Confirmed:"Your order has been confirmed.",Packed:"Your order is being packed.","Out for Delivery":"Your order is out for delivery.",Delivered:"Your order has been delivered.",Cancelled:"Your order has been cancelled."};text.innerHTML=`<b>${esc(messages[status]||status)}</b>${total!=null?`<br>Total: ${money(total)}`:""}`;cancel.style.display=(status==="Pending"||status==="Confirmed")?"inline-block":"none";if(status==="Cancelled")cancel.disabled=true;if(ref)ref.textContent="Order ID: "+(localStorage.getItem("delhi6_order_id")||"")+(created?" • "+new Date(created).toLocaleString("en-IN"):"")}
 async function showTracker(){
+  const tracker=document.getElementById("tracker");
+  const live=document.getElementById("trackerLive");
   const {data:sessionData}=await db.auth.getSession();
   if(!sessionData?.session?.user){
-    document.getElementById("tracker").style.display="none";
+    if(tracker)tracker.style.display="none";
     return;
   }
   const id=localStorage.getItem("delhi6_order_id"),phone=localStorage.getItem("delhi6_order_phone");
   if(!id||!phone){
-    document.getElementById("tracker").style.display="none";
+    if(tracker)tracker.style.display="none";
     return;
   }
+  // Keep the tracker visible as soon as an order has been placed.
+  if(tracker)tracker.style.display="block";
+  if(live)live.textContent="🔄 Checking latest order status...";
   try{
-    let {data,error}=await db.rpc("get_order_status",{p_order_id:id,p_phone:phone});
+    const {data,error}=await db.rpc("get_order_status",{p_order_id:id,p_phone:phone});
     if(error)throw error;
-    let row=Array.isArray(data)?data[0]:data;
+    const row=Array.isArray(data)?data[0]:data;
     if(!row){
-      document.getElementById("tracker").style.display="none";
+      if(live)live.textContent="⚠️ This order could not be found.";
       return;
     }
     updateTracker(row.status||"Pending",row.total,row.created_at);
-    const live=document.getElementById("trackerLive");
-    if(live)live.textContent="🟢 Status is updated automatically";
+    if(live)live.textContent="🟢 Live status updates enabled";
     loadOrderChat();
   }catch(e){
-    const live=document.getElementById("trackerLive");
-    if(live)live.textContent="⚠️ Status refresh unavailable right now";
+    if(live)live.textContent="⚠️ Status refresh unavailable: "+(e?.message||"Please try again");
   }
 }
 if(window.customerTrackerTimer)clearInterval(window.customerTrackerTimer);
