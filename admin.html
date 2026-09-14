@@ -1,13 +1,6 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Delhi 6 Hotel Admin</title><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="config.js"></script><style>
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Delhi 6 Hotel Admin</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#fffaf0;color:#171717}header{background:#f4c400;padding:18px 6%;font-size:23px;font-weight:900;position:sticky;top:0;z-index:5}.wrap{max-width:1100px;margin:auto;padding:24px 5%}.panel{background:#fff;padding:20px;border-radius:16px;box-shadow:0 3px 15px #0002;margin-bottom:18px}input,textarea,select{width:100%;padding:11px;margin:6px 0;border:1px solid #ccc;border-radius:8px;font:inherit}button{padding:11px 15px;border:0;border-radius:9px;background:#f4c400;font-weight:900;cursor:pointer}.danger{background:#171717;color:#fff}.logout{float:right;background:#171717;color:#fff}.small{font-size:13px;color:#666}.login-card{max-width:460px;margin:70px auto;text-align:center;padding:34px 28px;border-radius:22px;background:#fff;box-shadow:0 12px 35px #0002}.pass-wrap{position:relative}.pass-wrap input{padding-right:52px}.eye{position:absolute;right:7px;top:7px;width:42px;height:42px;padding:0;background:transparent}.login-btn{width:100%;margin-top:14px;background:#171717;color:#fff}.login-error{display:none;color:#b00020;background:#fff0f0;border-radius:9px;padding:9px;margin-top:12px;font-weight:700}.row{display:grid;grid-template-columns:1fr auto auto;gap:8px;border-top:1px solid #ddd;padding:12px 0;align-items:center}.order{border-top:1px solid #ddd;padding:15px 0}.status{font-weight:800}.customer,.chatItem,.walletItem{border:1px solid #ddd;border-radius:12px;padding:13px;margin:9px 0}.customerTools{margin-top:10px;padding-top:10px;border-top:1px solid #eee}.checkrow{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.checkrow label{display:flex;align-items:center;gap:5px;font-weight:700}.checkrow input{width:auto;margin:0}.banGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}@media(max-width:700px){.banGrid{grid-template-columns:1fr}}.customerHead{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}.blocked{background:#fff0f0;border-color:#e99}.chatList{max-height:320px;overflow:auto;background:#fafafa;border-radius:10px;padding:8px}.chatMsg{padding:8px 10px;margin:5px 0;border-radius:10px;max-width:88%;background:#eee}.chatMsg.customer{margin-left:auto;background:#f4c400}.chatMsg.admin{margin-right:auto;background:#e8e8e8}.chatRow{display:flex;gap:8px}.chatRow input{flex:1}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}@media(max-width:700px){.grid2{grid-template-columns:1fr}.row{grid-template-columns:1fr}.logout{float:none}}
-</style>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-<style>
-.liveMap{width:100%;height:230px;border-radius:14px;overflow:hidden;margin-top:10px;border:1px solid #ddd;position:relative;z-index:1}
-.liveMap .leaflet-control-attribution{font-size:9px}
-</style>
-</head><body>
+</style></head><body>
 <header>🔐 Delhi 6 Hotel — Admin <button id="logoutBtn" class="logout" onclick="logout()" style="display:none">Logout</button></header>
 <div class="wrap"><div id="login" class="panel login-card"><div style="font-size:45px">🔐</div><div class="small">SECURE ADMIN ACCESS</div><h2>Delhi 6 Admin</h2><p class="small">Enter the admin password to continue.</p><div class="pass-wrap"><input id="password" type="password" placeholder="Enter admin password" autocomplete="current-password"><button class="eye" type="button" onclick="togglePassword()">👁</button></div><div id="loginError" class="login-error"></div><button class="login-btn" onclick="login()">Login →</button></div>
 <div id="app" style="display:none">
@@ -181,55 +174,8 @@ async function addDeliveryBoy(){const name=document.getElementById('dbName').val
 async function editDeliveryBoy(id,name,phone,login,pay){const n=prompt('Name',name);if(n===null)return;const ph=prompt('Phone',phone);if(ph===null)return;const li=prompt('Login ID',login);if(li===null)return;const py=prompt('Payment per delivery ₹',pay);if(py===null)return;const pin=prompt('New PIN (blank = keep current PIN)','');if(pin===null)return;const r=await getDb().rpc('admin_update_delivery_boy',{p_password:ADMIN_PASSWORD,p_id:id,p_name:n,p_phone:ph,p_login_id:li,p_pin:pin||null});if(r.error)return alert(r.error.message);loadDeliveryBoys()}
 async function toggleDeliveryBoy(id,active){const r=await getDb().rpc('admin_set_delivery_boy_active',{p_password:ADMIN_PASSWORD,p_id:id,p_active:active});if(r.error)return alert(r.error.message);loadDeliveryBoys()}
 async function deleteDeliveryBoy(id){if(!confirm('Delete this delivery boy?'))return;const r=await getDb().rpc('admin_delete_delivery_boy',{p_password:ADMIN_PASSWORD,p_id:id});if(r.error)return alert(r.error.message);loadDeliveryBoys()}
-const adminLiveMaps={};
-function adminMapId(orderId){
-  return "adminLiveMap_"+String(orderId).replace(/[^a-zA-Z0-9_-]/g,"_");
-}
-async function loadDeliveryTracking(){
-  const box=document.getElementById('deliveryTracking');
-  if(!box)return;
-  const r=await getDb().rpc('admin_delivery_details',{p_password:ADMIN_PASSWORD});
-  if(r.error){
-    box.innerHTML='<div class="small">Unable to load delivery tracking: '+esc(r.error.message)+'</div>';
-    return;
-  }
-  const rows=r.data||[];
-  box.innerHTML=rows.map((d,i)=>{
-    const hasLoc=d.delivery_lat!=null&&d.delivery_lng!=null;
-    const mapId='adminLiveMap_'+i;
-    return `<div class="customer" style="margin-bottom:14px">
-      <b>📦 Order ${esc(d.order_id)}</b> • <b>${esc(d.assignment_status||'-')}</b><br>
-      👤 ${esc(d.customer_name||'Customer')} • 📞 ${esc(d.phone||'-')}<br>
-      📍 ${esc(d.address||'-')}<br>
-      💰 Order: ${money(d.total)} • Delivery Payment: ${money(d.payment)}<br>
-      🚚 <b>${esc(d.delivery_boy_name||'Not assigned')}</b> • ${esc(d.delivery_boy_phone||'-')}<br>
-      🕐 Requested: ${d.request_created_at?new Date(d.request_created_at).toLocaleString('en-IN'):'-'}<br>
-      ✅ Accepted: ${d.accepted_at?new Date(d.accepted_at).toLocaleString('en-IN'):'Not accepted yet'}
-      ${d.completed_at?`<br>🏁 Completed: ${new Date(d.completed_at).toLocaleString('en-IN')}`:''}
-      ${hasLoc?`
-        <div style="margin-top:10px;font-weight:800">📡 Delivery Boy Live Location</div>
-        <div id="${mapId}" style="height:240px;border-radius:12px;overflow:hidden;border:1px solid #ddd;margin-top:6px"></div>
-        <div class="small" style="margin-top:5px">Updated: ${d.delivery_location_at?new Date(d.delivery_location_at).toLocaleString('en-IN'):'-'}${d.delivery_accuracy?` • ±${Math.round(d.delivery_accuracy)}m`:''}</div>
-      `:`<div style="margin-top:8px">📡 <b>Delivery Boy Live Location:</b> Not available yet</div>`}
-      ${hasLoc?`<a href="https://www.google.com/maps?q=${Number(d.delivery_lat).toFixed(6)},${Number(d.delivery_lng).toFixed(6)}" target="_blank" rel="noopener"><button type="button" style="margin-top:7px">🗺️ Open in Google Maps</button></a>`:''}
-      <br>📦 Order Status: <b>${esc(d.order_status||'-')}</b>
-    </div>`;
-  }).join('')||'<div class="small">No delivery records yet.</div>';
+async function loadDeliveryTracking(){const box=document.getElementById('deliveryTracking');if(!box)return;const r=await getDb().rpc('admin_delivery_details',{p_password:ADMIN_PASSWORD});if(r.error){box.innerHTML='<div class="small">Unable to load delivery tracking: '+esc(r.error.message)+'</div>';return}box.innerHTML=(r.data||[]).map(d=>{const map=d.delivery_lat!=null&&d.delivery_lng!=null?`https://www.google.com/maps?q=${d.delivery_lat},${d.delivery_lng}`:'';return `<div class="customer"><b>📦 Order ${esc(d.order_id)}</b> • <b>${esc(d.assignment_status||'-')}</b><br>👤 ${esc(d.customer_name||'Customer')} • 📞 ${esc(d.phone||'-')}<br>📍 ${esc(d.address||'-')}<br>💰 Order: ${money(d.total)} • Delivery Payment: ${money(d.payment)}<br>🚚 <b>${esc(d.delivery_boy_name||'Not assigned')}</b> • ${esc(d.delivery_boy_phone||'-')}<br>🕐 Requested: ${d.request_created_at?new Date(d.request_created_at).toLocaleString('en-IN'):'-'}<br>✅ Accepted: ${d.accepted_at?new Date(d.accepted_at).toLocaleString('en-IN'):'Not accepted yet'}${d.completed_at?`<br>🏁 Completed: ${new Date(d.completed_at).toLocaleString('en-IN')}`:''}${map?`<br>📡 Latest Boy Location: <a href="${map}" target="_blank">${Number(d.delivery_lat).toFixed(6)}, ${Number(d.delivery_lng).toFixed(6)}</a> ${d.delivery_accuracy?`(±${Math.round(d.delivery_accuracy)}m)`:''}<br><span class="small">Location updated: ${d.delivery_location_at?new Date(d.delivery_location_at).toLocaleString('en-IN'):'-'}</span>`:'<br>📡 Latest Boy Location: Not available'}<br>📦 Order Status: <b>${esc(d.order_status||'-')}</b></div>`}).join('')||'<div class="small">No delivery records yet.</div>'}
 
-  // Rebuild the visual maps for each current delivery record.
-  Object.keys(adminLiveMaps).forEach(k=>{try{adminLiveMaps[k].remove()}catch(e){} delete adminLiveMaps[k]});
-  rows.forEach((d,i)=>{
-    if(d.delivery_lat==null||d.delivery_lng==null)return;
-    const el=document.getElementById('adminLiveMap_'+i);
-    if(!el)return;
-    const lat=Number(d.delivery_lat),lng=Number(d.delivery_lng);
-    const m=L.map(el,{zoomControl:true}).setView([lat,lng],16);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(m);
-    const marker=L.marker([lat,lng]).addTo(m);
-    marker.bindPopup("🚚 "+esc(d.delivery_boy_name||"Delivery Boy")+"<br>📍 Live Location").openPopup();
-    adminLiveMaps[i]=m;
-  });
-}
 async function loadAll(){try{await loadSettings();await loadDeliveryBoys();await Promise.all([loadMenu(),loadOrders(),loadCustomers(),loadCustomerMessages(),loadOrderChats(),loadWalletTopups(),loadDeliveryTracking()])}catch(e){console.error(e)}}
-if(sessionStorage.getItem('delhi6_admin_logged_in')==='1')showApp();setInterval(()=>{if(sessionStorage.getItem('delhi6_admin_logged_in')==='1'){loadCustomerMessages();loadOrderChats();loadWalletTopups();loadDeliveryTracking()}},3000);
+if(sessionStorage.getItem('delhi6_admin_logged_in')==='1')showApp();setInterval(()=>{if(sessionStorage.getItem('delhi6_admin_logged_in')==='1'){loadCustomerMessages();loadOrderChats();loadWalletTopups();loadDeliveryTracking()}},5000);
 </script></body></html>
