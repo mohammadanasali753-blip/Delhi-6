@@ -144,7 +144,17 @@ async function loadMenu(){
   const r=await getDb().from('menu_items').select('*').order('created_at',{ascending:true});
   if(r.error){list.textContent='Unable to load menu: '+r.error.message;return}
   const rows=r.data||[];
-  list.innerHTML=rows.map(m=>`<div class="order" style="margin-bottom:10px"><b>${esc(m.name)}</b> • ${money(m.price)}<br><span class="small">${esc(m.description||'')}</span><br><button type="button" class="danger" onclick="deleteItem('${m.id}')">🗑️ Delete Menu Item</button></div>`).join('')||'No menu items.';
+  window._menuRows=rows;
+  list.innerHTML=rows.map(m=>`<div class="order" style="margin-bottom:10px">
+    <div style="display:flex;gap:12px;align-items:center">
+      <img src="${esc(m.image_url||'https://placehold.co/100x80/f4c400/111?text=Food')}" onerror="this.src='https://placehold.co/100x80/f4c400/111?text=Food'" style="width:100px;height:80px;object-fit:cover;border-radius:10px;border:1px solid #ddd">
+      <div style="flex:1"><b>${esc(m.name)}</b> • ${money(m.price)}<br><span class="small">${esc(m.description||'')}</span></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px">
+      <button type="button" onclick="openEditMenu('${m.id}')">✏️ Edit Menu</button>
+      <button type="button" class="danger" onclick="deleteItem('${m.id}')">🗑️ Delete Menu Item</button>
+    </div>
+  </div>`).join('')||'No menu items.';
 }
 function previewProductImage(){const u=document.getElementById("img")?.value.trim();const box=document.getElementById("productImagePreview");if(!box)return;if(u)box.innerHTML=`<img src="${esc(u)}" style="width:120px;height:120px;object-fit:cover;border-radius:12px;border:1px solid #ddd" onerror="this.style.display=\'none\'">`;else box.innerHTML=""}
 function previewProductImageFile(){const f=document.getElementById("imgFile")?.files?.[0];if(!f)return;const box=document.getElementById("productImagePreview");if(box)box.innerHTML=`<img src="${URL.createObjectURL(f)}" style="width:120px;height:120px;object-fit:cover;border-radius:12px;border:1px solid #ddd"><div style="margin-top:5px">${esc(f.name)}</div>`}
@@ -174,6 +184,44 @@ async function addItem(){
   }
 }
 
+function openEditMenu(id){
+  const m=(window._menuRows||[]).find(x=>String(x.id)===String(id));
+  if(!m)return;
+  const old=document.getElementById('editMenuModal'); if(old)old.remove();
+  const modal=document.createElement('div'); modal.id='editMenuModal'; modal.style='position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px;';
+  modal.innerHTML=`<div style="background:#fff;color:#111;width:min(520px,100%);max-height:90vh;overflow:auto;border-radius:18px;padding:18px;box-sizing:border-box">
+    <h2 style="margin-top:0">✏️ Edit Menu Item</h2>
+    <label><b>Name</b></label><input id="editMenuName" value="${esc(m.name)}">
+    <label><b>Price</b></label><input id="editMenuPrice" type="number" value="${Number(m.price)||0}">
+    <label><b>Description</b></label><textarea id="editMenuDesc">${esc(m.description||'')}</textarea>
+    <label><b>Product Image</b></label>
+    <input id="editMenuImageUrl" type="url" value="${esc(m.image_url||'')}" placeholder="Image URL (optional)">
+    <input id="editMenuImageFile" type="file" accept="image/*" capture="environment" style="margin-top:8px;width:100%">
+    <div id="editMenuPreview" style="margin:10px 0">${m.image_url?`<img src="${esc(m.image_url)}" style="width:140px;height:100px;object-fit:cover;border-radius:10px" onerror="this.style.display='none'">`:''}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button type="button" onclick="saveEditedMenu('${id}')">💾 Save Changes</button>
+      <button type="button" class="danger" onclick="document.getElementById('editMenuModal').remove()">Cancel</button>
+    </div>
+    <p id="editMenuMsg" class="small"></p>
+  </div>`;
+  document.body.appendChild(modal);
+  document.getElementById('editMenuImageFile').onchange=function(){const f=this.files?.[0];if(f)document.getElementById('editMenuPreview').innerHTML=`<img src="${URL.createObjectURL(f)}" style="width:140px;height:100px;object-fit:cover;border-radius:10px"><div>${esc(f.name)}</div>`};
+}
+async function saveEditedMenu(id){
+  const name=document.getElementById('editMenuName').value.trim(), price=Number(document.getElementById('editMenuPrice').value), description=document.getElementById('editMenuDesc').value.trim();
+  const urlEl=document.getElementById('editMenuImageUrl'), fileEl=document.getElementById('editMenuImageFile'), msg=document.getElementById('editMenuMsg');
+  if(!name||!price)return alert('Name and price are required.');
+  try{
+    let image_url=urlEl.value.trim(); const f=fileEl.files?.[0];
+    if(f){msg.textContent='Uploading new image...'; image_url=await uploadProductImage(f);}
+    msg.textContent='Saving changes...';
+    const r=await getDb().from('menu_items').update({name,price,description,image_url}).eq('id',id);
+    if(r.error)throw new Error(r.error.message);
+    alert('✅ Menu item updated successfully');
+    document.getElementById('editMenuModal')?.remove();
+    await loadMenu();
+  }catch(e){msg.textContent='❌ Update failed: '+(e.message||e);}
+}
 async function editItem(id,k,v){const o={};o[k]=k==='price'?Number(v):v;const r=await getDb().from('menu_items').update(o).eq('id',id);if(r.error)alert(r.error.message)}async function deleteItem(id){if(!confirm('Delete this menu item?'))return;const r=await getDb().from('menu_items').delete().eq('id',id);if(r.error)alert(r.error.message);else loadMenu()}
 async function loadOrders(){const r=await getDb().rpc('admin_list_orders',{p_password:ADMIN_PASSWORD});if(r.error){orders.textContent='Unable to load orders: '+r.error.message;return}orders.innerHTML=(r.data||[]).map(o=>{const items=(o.cart||[]).map(x=>`${esc(x.name)} × ${x.qty||1}`).join(', ');return `<div class="order"><b>Order:</b> ${esc(o.id)}<br><b>${esc(o.customer_name)}</b> • ${esc(o.phone)}<br>📍 ${esc(o.address)}<br>🍽️ ${items}<br>💰 ${money(o.total)} • ${esc(o.payment_method||'Cash on Delivery')}<br><span class="small">${new Date(o.created_at).toLocaleString('en-IN')}</span><br><select class="status" onchange="setStatus('${o.id}',this.value)"><option ${o.status==='Pending'?'selected':''}>Pending</option><option ${o.status==='Confirmed'?'selected':''}>Confirmed</option><option ${o.status==='Packed'?'selected':''}>Packed</option><option ${o.status==='Out for Delivery'?'selected':''}>Out for Delivery</option><option ${o.status==='Delivered'?'selected':''}>Delivered</option><option ${o.status==='Cancelled'?'selected':''}>Cancelled</option></select> <button class="danger" onclick="deleteOrder('${o.id}')">Delete Order</button></div>`}).join('')||'No orders.'}
 async function setStatus(id,status){const r=await getDb().rpc('admin_update_order_status',{p_password:ADMIN_PASSWORD,p_order_id:String(id),p_status:status});if(r.error)alert(r.error.message);else{loadOrders();loadOrderChats()}}async function deleteOrder(id){if(!confirm('Delete this order permanently?'))return;const r=await getDb().rpc('admin_delete_order',{p_password:ADMIN_PASSWORD,p_order_id:String(id)});if(r.error)alert(r.error.message);else loadOrders()}
