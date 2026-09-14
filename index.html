@@ -309,7 +309,6 @@ async function placeOrder(){
   let n=document.getElementById("name").value.trim(),p=document.getElementById("phone").value.trim(),a=document.getElementById("address").value.trim(),note=document.getElementById("note").value.trim(),pay=document.getElementById("payment").value;
   if(currentCustomerLocation)a+=`\n📍 Current Location: ${currentCustomerLocation}`;
   if(!n||!p||!a)return alert("Please fill Name, Mobile Number and Full Address.");
-  if(!customerAllowedPayments.includes(pay))return alert("This payment option is not available for your account. Please choose another option.");
   const {data:sessionData}=await db.auth.getSession();
   if(!sessionData?.session?.user){openCart();closeSideMenu();openAccountPanel();return alert("Please log in before placing an order.");}
   if(pay==="Wallet" && !sessionData?.session?.user){openCart();closeSideMenu();openAccountPanel();return alert("Please log in to pay from your wallet.")}
