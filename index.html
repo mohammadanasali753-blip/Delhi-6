@@ -117,7 +117,7 @@ async function loadMyOrders(){
   let {data,error}=await db.rpc("get_my_orders");
   if(error&&/could not find the function|schema cache/i.test(error.message||"")){({data,error}=await db.rpc("my_orders"));}
   if(error){list.textContent="Unable to load orders: "+error.message;return}
-  list.innerHTML=(data||[]).map(o=>`<div style="border-top:1px solid #ddd;padding:12px 0"><b>Order ${esc(o.id)}</b> • <b>${esc(o.status||"Pending")}</b><br>🕒 ${new Date(o.created_at).toLocaleString("en-IN")} • 💰 ${money(o.total)}<br>💳 ${esc(o.payment_method||"Cash on Delivery")} • Payment: ${esc(o.payment_status||"Pending")}<br>📍 ${esc(o.address||"")}<br>🍽️ ${(o.cart||[]).map(x=>esc(x.name)+(x.size?" ("+esc(x.size)+")":"")+" × "+(x.qty||1)).join(", ")||"No items"}<br><button type="button" class="deleteOrderBtn" onclick="deleteMyOrder('${esc(o.id)}')">🗑️ Delete from History</button></div>`).join("")||"No orders yet.";
+  list.innerHTML=(data||[]).map(o=>`<div style="border-top:1px solid #ddd;padding:12px 0"><b>Order ${esc(o.id)}</b> • <b>${esc(o.status||"Pending")}</b><br>🕒 ${new Date(o.created_at).toLocaleString("en-IN")} • 💰 ${money(o.total)}<br>💳 ${esc(o.payment_method||"Cash on Delivery")} • Payment: ${esc((o.payment_method||"Cash on Delivery")==="Cash on Delivery" && (o.status||"")==="Delivered" ? "Paid" : (o.payment_status||"Pending"))}<br>📍 ${esc(o.address||"")}<br>🍽️ ${(o.cart||[]).map(x=>esc(x.name)+(x.size?" ("+esc(x.size)+")":"")+" × "+(x.qty||1)).join(", ")||"No items"}<br><button type="button" class="deleteOrderBtn" onclick="deleteMyOrder('${esc(o.id)}')">🗑️ Delete from History</button></div>`).join("")||"No orders yet.";
 }
 function showCustomerBanScreen(row){
   customerBanScreen=true;
