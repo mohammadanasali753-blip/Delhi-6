@@ -136,7 +136,62 @@ function showCustomerBanScreen(row){
   }
 }
 
-db.auth.onAuthStateChange((event,session)=>{showAuth(session?.user||null);if(session?.user)setTimeout(refreshCustomerRules,100)});
+function setAuthMsg(msg){const el=document.getElementById("authMsg");if(el)el.textContent=msg||""}
+
+function showAuth(user){
+  const out=document.getElementById("authLoggedOut"), inn=document.getElementById("authLoggedIn"), txt=document.getElementById("authUserText");
+  if(user){
+    document.body.classList.remove("loginGateMode");
+    if(out)out.style.display="none";
+    if(inn)inn.style.display="block";
+    if(txt)txt.textContent="👤 "+(user.user_metadata?.full_name||user.email||"Logged in");
+    setAuthMsg("");
+    document.querySelectorAll(".privateOnly").forEach(x=>x.style.display="block");
+    loadMyOrders();
+    showTracker();
+    loadGeneralMessages();
+  }else{
+    document.body.classList.add("loginGateMode");
+    if(out)out.style.display="flex";
+    if(inn)inn.style.display="none";
+    document.querySelectorAll(".privateOnly").forEach(x=>x.style.display="none");
+  }
+}
+
+async function googleLogin(){
+  setAuthMsg("Opening Google login...");
+  const {error}=await db.auth.signInWithOAuth({
+    provider:"google",
+    options:{redirectTo:window.location.origin+"/",queryParams:{prompt:"select_account"}}
+  });
+  if(error){setAuthMsg("Google login failed: "+error.message);alert("Google login failed: "+error.message)}
+}
+
+async function logoutCustomer(){
+  await db.auth.signOut();
+  localStorage.removeItem("delhi6_order_id");
+  localStorage.removeItem("delhi6_order_phone");
+  document.getElementById("tracker")?.style.setProperty("display","none");
+  document.getElementById("myOrders")?.style.setProperty("display","none");
+  showAuth(null);
+}
+
+async function showTracker(){
+  const tracker=document.getElementById("tracker");
+  if(!tracker)return;
+  const {data:sd}=await db.auth.getSession();
+  if(!sd?.session?.user){tracker.style.display="none";return}
+  const id=localStorage.getItem("delhi6_order_id"),phone=localStorage.getItem("delhi6_order_phone");
+  if(!id||!phone){tracker.style.display="none";return}
+  const {data,error}=await db.rpc("get_order_status",{p_order_id:String(id),p_phone:String(phone)});
+  if(error){tracker.style.display="block";const t=document.getElementById("trackerText");if(t)t.innerHTML="<b>Checking your order status...</b>";return}
+  const row=Array.isArray(data)?data[0]:data;
+  if(!row){tracker.style.display="none";return}
+  updateTracker(row.status||"Pending",row.total,row.created_at,row.delivery_otp);
+  loadOrderChat();
+}
+
+db.auth.onAuthStateChange((event,session)=>{showAuth(session?.user||null);if(session?.user)setTimeout(async()=>{const ok=await refreshCustomerRules();if(ok===false)showAuth(null)},100)});
 async function initCustomerAuth(){const {data}=await db.auth.getSession();const user=data.session?.user||null;if(user){const ok=await refreshCustomerRules();if(ok===false){showAuth(null);return}}showAuth(user)}
 function finalTotal(){return cart.reduce((s,x)=>s+x.price*x.qty,0)+Number(deliveryCharge||0)}
 function upiLink(amount){return "upi://pay?pa="+encodeURIComponent(settings.upiId)+"&pn="+encodeURIComponent("Delhi 6 Hotel")+"&am="+encodeURIComponent(Number(amount).toFixed(2))+"&cu=INR&tr="+encodeURIComponent("DELHI6"+Date.now())}
