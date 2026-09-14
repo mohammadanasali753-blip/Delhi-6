@@ -1,0 +1,61 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Delhi 6 — Delivery Boy</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#fffaf0;color:#171717}.head{background:#f4c400;padding:16px 5%;font-size:21px;font-weight:900;display:flex;justify-content:space-between;align-items:center}.wrap{max-width:900px;margin:auto;padding:20px 5%}.card{background:#fff;border-radius:18px;padding:18px;margin-bottom:16px;box-shadow:0 4px 18px #0002}input,select{width:100%;padding:12px;margin:6px 0;border:1px solid #ccc;border-radius:9px;font:inherit}button{padding:11px 15px;border:0;border-radius:9px;background:#f4c400;font-weight:900;cursor:pointer}.dark{background:#171717;color:#fff}.danger{background:#b00020;color:#fff}.muted{color:#666;font-size:13px}.order{border:1px solid #ddd;border-radius:14px;padding:14px;margin:10px 0}.pill{display:inline-block;padding:5px 8px;border-radius:20px;background:#eee;font-size:12px;font-weight:800}.login{max-width:450px;margin:60px auto}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:650px){.grid{grid-template-columns:1fr}}.loc{background:#eaf6ff;padding:10px;border-radius:10px;margin:8px 0}.success{color:#087a2f;font-weight:800}.error{color:#b00020;font-weight:800}</style></head><body><header class="head"><span>🚚 Delhi 6 — Delivery Boy</span><button id="logout" class="dark" onclick="logout()" style="display:none">Logout</button></header><main class="wrap"><section id="login" class="card login"><h2>🚚 Delivery Boy Login</h2><p class="muted">Admin se mila Login ID aur PIN enter karo.</p><input id="loginId" placeholder="Login ID" autocomplete="username"><input id="pin" type="password" inputmode="numeric" maxlength="8" placeholder="4-8 digit PIN" autocomplete="current-password"><button style="width:100%;margin-top:8px" onclick="login()">Login</button><p id="loginMsg" class="error"></p></section><section id="panel" style="display:none"><div class="card"><div class="grid"><div><b id="boyName">Delivery Boy</b><div class="muted" id="boyPhone"></div></div><div><b>💰 Payment / Delivery</b><div id="boyPay">₹0</div></div></div></div><div class="card">
+<h2>📡 My Live Location</h2>
+<div id="myLocationStatus" class="loc">📍 Location not started yet.</div>
+<div class="grid">
+<button onclick="requestMyLocation()">📍 Update My Location</button>
+<a id="myLocationMap" href="#" target="_blank" style="text-decoration:none;display:none"><button type="button" style="width:100%">🗺️ Open My Location</button></a>
+</div>
+<p class="muted">Location permission Allow rakho. Ye location Admin aur active customer ko latest position dikhayegi.</p>
+</div><div class="card"><h2>🔔 Delivery Requests</h2><p class="muted">Admin ne jo request aapke account me bheji hai, usme customer ka naam, phone, address aur location abhi se dikhengi. Accept karne ke baad delivery aapke My Deliveries me chali jayegi.</p><div id="available">Loading...</div></div><div class="card"><h2>🚚 My Deliveries</h2><div id="mine">Loading...</div></div></section></main><script>
+const SB_URL='https://qxktximeddpttcjkaumo.supabase.co',SB_KEY='sb_publishable_mUL6OaOwJ649Xi68uQOcLw_9g0fM8mM',db=supabase.createClient(SB_URL,SB_KEY);
+let boy=null;
+document.getElementById('loginBtn')?.addEventListener('click', login);
+document.getElementById('pin')?.addEventListener('keydown',e=>{if(e.key==='Enter')login();});
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function money(n){return '₹'+Number(n||0).toLocaleString('en-IN')}
+async function login(){
+  const id=document.getElementById('loginId').value.trim();
+  const pin=document.getElementById('pin').value.trim();
+  const msg=document.getElementById('loginMsg');
+  if(!id||!/^[0-9]{4,8}$/.test(pin)){
+    msg.textContent='Login ID aur 4-8 digit PIN bharo.';
+    return;
+  }
+  msg.textContent='Logging in...';
+  try{
+    const r=await db.rpc('delivery_login',{p_login_id:id,p_pin:pin});
+    if(r.error) throw r.error;
+    const data=Array.isArray(r.data)?r.data[0]:r.data;
+    if(!data?.success){
+      msg.textContent=data?.message||'Wrong Login ID/PIN ya account inactive hai.';
+      return;
+    }
+    boy=data;
+    localStorage.setItem('delhi6_delivery_boy',JSON.stringify(boy));
+    document.getElementById('login').style.display='none';
+    document.getElementById('app').style.display='block';
+    startLiveLocation();
+    loadAll();
+  }catch(e){
+    msg.textContent='Login error: '+(e.message||String(e));
+  }
+}
+function locationError(err){
+  setLocationStatus(`🔴 <b>Location permission/error:</b> ${esc(err.message||'Location unavailable')}<br><span class="muted">Phone Settings/Browser me Location Allow karo.</span>`);
+}
+function startLiveLocation(){
+  if(!boy||!navigator.geolocation){setLocationStatus('🔴 Is browser me location available nahi hai.');return}
+  if(locationWatchId!==null)navigator.geolocation.clearWatch(locationWatchId);
+  setLocationStatus('🟡 Location permission maang raha hai...');
+  locationWatchId=navigator.geolocation.watchPosition(saveLiveLocation,locationError,{enableHighAccuracy:true,maximumAge:5000,timeout:15000});
+}
+function requestMyLocation(){
+  if(!navigator.geolocation){locationError({message:'Geolocation supported nahi hai'});return}
+  setLocationStatus('🟡 Current location le raha hoon...');
+  navigator.geolocation.getCurrentPosition(saveLiveLocation,locationError,{enableHighAccuracy:true,maximumAge:0,timeout:20000});
+}
+function sendLocation(){requestMyLocation()}
+async function loadAll(){await Promise.all([loadAvailable(),loadMine()]);sendLocation()}
+const saved=localStorage.getItem('delhi6_delivery_boy');if(saved){try{boy=JSON.parse(saved);showPanel();startLiveLocation();loadAll()}catch(e){localStorage.removeItem('delhi6_delivery_boy')}}
+setInterval(()=>{if(boy){loadAvailable();loadMine();sendLocation()}},10000);
+</script></body></html>
