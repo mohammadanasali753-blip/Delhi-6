@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Delhi 6 Hotel | Order Online</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#fffaf0;color:#171717}
@@ -49,6 +49,13 @@ body.banned > .banScreen{display:flex!important}
 :root{--primary:#f4c400;--dark:#171717}
 .nav{background:var(--primary)!important}.hero{background:linear-gradient(135deg,var(--primary),var(--primary))!important}.add{background:var(--primary)!important}.map{background:var(--primary)!important}.contact{background:var(--dark)!important}.btn{background:var(--dark)!important}
 </style>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<style>
+.liveMap{width:100%;height:230px;border-radius:14px;overflow:hidden;margin-top:10px;border:1px solid #ddd;position:relative;z-index:1}
+.liveMap .leaflet-control-attribution{font-size:9px}
+</style>
 </head>
 <body class="loginGateMode"><div id="customerClock" class="customerClock"><small>DELHI 6 TIME</small><span id="customerClockTime">--:--</span></div><div id="siteOpenStatus" style="display:none;text-align:center;font-size:34px;font-weight:900;padding:18px 10px;margin:10px;border-radius:16px;letter-spacing:1px"></div>
 <div class="nav"><div id="brand" class="brand">🍗 Delhi 6 Hotel</div><div class="navActions"><button class="btn" onclick="openCart()">🛒 Cart (<span id="count">0</span>)</button><button class="hamb" onclick="toggleSideMenu()" aria-label="Menu">☰</button></div></div>
@@ -75,7 +82,11 @@ body.banned > .banScreen{display:flex!important}
 <div id="myOrders" class="authbar" style="display:none"><div class="authbox"><b>📦 My Orders</b><div id="myOrdersList" class="muted" style="margin-top:8px"></div></div></div>
 <div id="myMessages" class="authbar" style="display:none"><div class="authbox"><b>💬 Messages</b><div id="myMessagesList" class="chatList" style="margin-top:8px"></div><div class="chatRow"><textarea id="messageInput" maxlength="2000" placeholder="Write a message to the hotel" rows="2" style="flex:1;resize:none;padding:11px;border:1px solid #ccc;border-radius:9px;font-family:Arial;font-size:15px"></textarea><button type="button" onclick="sendGeneralMessage()">Send</button></div></div></div>
 <section class="hero"><div id="hotelSlider" class="hotelSlider" style="display:none"></div><img id="hotelHeroImg" class="hotelHeroImg" alt="Delhi 6 Hotel" style="display:none"><h1 id="heroTitle">Delhi 6 Hotel</h1><p id="heroSub">Fresh • Hot • Delicious Biryani</p><a class="wa" href="https://wa.me/918750794831" target="_blank">WhatsApp</a></section><section id="tracker" class="wrap" style="display:none;padding-bottom:0"><div class="tracker"><h3 style="margin:0 0 6px">📦 Your Order</h3><div id="trackerText">Checking order status...</div>
-<div id="deliveryBoyLive" style="display:none;margin:10px 0;padding:12px;border:1px solid #eadb78;background:#fff8d6;border-radius:10px"></div>
+<div id="deliveryBoyLive" style="display:none;margin:10px 0;padding:12px;border:1px solid #eadb78;background:#fff8d6;border-radius:10px">
+  <div style="font-weight:800;font-size:17px">📡 Delivery Boy Live Location</div>
+  <div id="deliveryBoyLiveInfo" style="margin:6px 0"></div>
+  <div id="deliveryBoyMap" style="height:260px;border-radius:12px;overflow:hidden;border:1px solid #ddd;background:#eee"></div>
+</div>
 <div class="steps"><div class="step" data-step="Pending"><div class="dot">1</div>Order received</div><div class="step" data-step="Confirmed"><div class="dot">2</div>Confirmed</div><div class="step" data-step="Packed"><div class="dot">3</div>Packed</div><div class="step" data-step="Out for Delivery"><div class="dot">4</div>Out for delivery</div><div class="step" data-step="Delivered"><div class="dot">5</div>Delivered</div></div><button id="cancelOrderBtn" class="cancelBtn" onclick="cancelMyOrder()">Cancel Order</button><div id="orderRef" class="orderRef"></div><div class="chatBox"><h4 style="margin:12px 0 6px">💬 Chat with the Hotel</h4><div id="orderChatList" class="chatList"><div class="muted">No messages yet.</div></div><div class="chatRow"><input id="orderChatInput" maxlength="2000" placeholder="Message the hotel about this order"><button onclick="sendOrderChat()">Send</button></div></div></div></section>
 <main class="wrap"><h2 id="menuTitle" class="title">Our Menu</h2><div id="menu" class="grid"><p class="empty">Menu is ready.</p></div></main>
 <section class="contact"><h2 id="contactTitle">Visit Us</h2><p id="addressText">Indra Park C12, Pali Factory, Uttam Nagar, New Delhi</p><p>📞 <span id="phoneText">+91 8750794831</span></p><a id="map" class="map" target="_blank" href="https://www.google.com/maps/search/?api=1&query=Indra+Park+C12+Pali+Factory+Uttam+Nagar+New+Delhi">📍 Google Maps</a><a class="wa" href="https://wa.me/918750794831" target="_blank">Order on WhatsApp</a></section>
@@ -119,7 +130,7 @@ function showAuth(user){
   document.body.classList.toggle("loginGateMode",!user);
   const box=document.getElementById("myOrders"),tracker=document.getElementById("tracker"),msgs=document.getElementById("myMessages");
   document.querySelectorAll("[data-private]").forEach(x=>x.style.display=user?"block":"none");
-  if(!user){if(box)box.style.display="none";if(msgs)msgs.style.display="none";if(tracker)tracker.style.display="none";localStorage.removeItem("delhi6_order_id");localStorage.removeItem("delhi6_order_phone");}
+  if(!user){if(box)box.style.display="none";if(msgs)msgs.style.display="none";if(tracker)tracker.style.display="none";}
   const out=document.getElementById("authLoggedOut"),inn=document.getElementById("authLoggedIn"),txt=document.getElementById("authUserText");
   if(user){out.style.display="none";inn.style.display="block";txt.textContent="Logged in: "+(user.email||"Google account");if(user.email)document.getElementById("authEmail").value=user.email;loadMyOrders();loadGeneralMessages();showTracker();refreshCustomerRules();}
   else{out.style.display="flex";inn.style.display="none";customerAllowedPayments=["Cash on Delivery","UPI","Wallet"];updatePaymentOptions();}
@@ -405,30 +416,56 @@ async function placeOrder(){
 }
 const statusSteps=["Pending","Confirmed","Packed","Out for Delivery","Delivered"];
 function statusIndex(status){if(status==="Cancelled")return -1;let i=statusSteps.indexOf(status);return i<0?0:i}
-function updateTracker(status,total,created){const tracker=document.getElementById("tracker"),text=document.getElementById("trackerText"),cancel=document.getElementById("cancelOrderBtn"),ref=document.getElementById("orderRef");if(!tracker)return;tracker.style.display="block";let idx=statusIndex(status);document.querySelectorAll(".step").forEach((el,i)=>{el.classList.remove("active","done");if(status!=="Cancelled"&&i<idx)el.classList.add("done");if(status!=="Cancelled"&&i===idx)el.classList.add("active")});const messages={Pending:"Your order has been received.",Confirmed:"Your order has been confirmed.",Packed:"Your order is being packed.","Out for Delivery":"Your order is out for delivery.",Delivered:"Your order has been delivered.",Cancelled:"Your order has been cancelled."};text.innerHTML=`<b>${esc(messages[status]||status)}</b>${total!=null?`<br>Total: ${money(total)}`:""}`;cancel.style.display=(status==="Pending"||status==="Confirmed")?"inline-block":"none";if(status==="Cancelled")cancel.disabled=true;if(ref)ref.textContent="Order ID: "+(localStorage.getItem("delhi6_order_id")||"")+(created?" • "+new Date(created).toLocaleString("en-IN"):"")}
+function updateTracker(status,total,created){const tracker=document.getElementById("tracker"),text=document.getElementById("trackerText"),cancel=document.getElementById("cancelOrderBtn"),ref=document.getElementById("orderRef");if(!tracker)return;tracker.style.display="block";let idx=statusIndex(status);document.querySelectorAll(".step").forEach((el,i)=>{el.classList.remove("active","done");if(status!=="Cancelled"&&i<idx)el.classList.add("done");if(status!=="Cancelled"&&i===idx)el.classList.add("active")});const messages={Pending:"Your order has been received.",Confirmed:"Your order has been confirmed.",Packed:"Your order is being packed.","Out for Delivery":"Your order is out for delivery.",Delivered:"Your order has been delivered.",Cancelled:"Your order has been cancelled."};text.innerHTML=`<b>${esc(messages[status]||status)}</b>${total!=null?`<br>Total: ${money(total)}`:""}`;cancel.style.display=(status==="Pending"||status==="Confirmed")?"inline-block":"none";if(status==="Cancelled")cancel.disabled=true;if(ref)ref.textContent="Order ID: "+(localStorage.getItem("delhi6_order_id")||"")+(created?" • "+new Date(created).toLocaleString("en-IN"):"");if(status==="Delivered"){if(customerLiveMap){customerLiveMap.remove();customerLiveMap=null;customerLiveMarker=null}localStorage.removeItem("delhi6_order_id");localStorage.removeItem("delhi6_order_phone");tracker.style.display="none";const live=document.getElementById("deliveryBoyLive");if(live)live.style.display="none"}}
+let customerLiveMap=null,customerLiveMarker=null;
 async function loadDeliveryBoyLiveLocation(orderId,phone){
   const box=document.getElementById("deliveryBoyLive");
-  if(!box)return;
+  const info=document.getElementById("deliveryBoyLiveInfo");
+  const mapEl=document.getElementById("deliveryBoyMap");
+  if(!box||!info||!mapEl)return;
   try{
     const {data,error}=await db.rpc("customer_delivery_location",{p_order_id:String(orderId),p_phone:String(phone)});
     if(error)throw error;
     const row=Array.isArray(data)?data[0]:data;
-    if(!row){
-      box.style.display="none";
-      return;
-    }
+    if(!row){box.style.display="none";return;}
     box.style.display="block";
     if(row.delivery_lat==null||row.delivery_lng==null){
-      box.innerHTML=`📡 <b>Delivery Boy Live Location</b><br><span class="muted">Delivery boy assigned hai, lekin current location abhi receive nahi hui.</span>`;
+      info.innerHTML=`<span class="muted">Delivery boy assigned hai, current location receive hote hi map par dikhegi.</span>`;
+      mapEl.style.display="none";
       return;
     }
-    const map=`https://www.google.com/maps?q=${Number(row.delivery_lat).toFixed(6)},${Number(row.delivery_lng).toFixed(6)}`;
-    box.innerHTML=`📡 <b>Delivery Boy Live Location</b><br>🚚 ${esc(row.delivery_boy_name||"Delivery Boy")}${row.delivery_boy_phone?` • 📞 <a href="tel:${esc(row.delivery_boy_phone)}">${esc(row.delivery_boy_phone)}</a>`:""}<br>📍 <a href="${map}" target="_blank" rel="noopener">Open Current Location</a><br><span class="muted">Updated: ${row.location_updated_at?new Date(row.location_updated_at).toLocaleString("en-IN"):"just now"}${row.delivery_accuracy?` • ±${Math.round(row.delivery_accuracy)}m`:""}</span>`;
+    mapEl.style.display="block";
+    const lat=Number(row.delivery_lat),lng=Number(row.delivery_lng);
+    const map=`https://www.google.com/maps?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
+    info.innerHTML=`🚚 <b>${esc(row.delivery_boy_name||"Delivery Boy")}</b>${row.delivery_boy_phone?` • 📞 <a href="tel:${esc(row.delivery_boy_phone)}">${esc(row.delivery_boy_phone)}</a>`:""}<br>📍 <a href="${map}" target="_blank" rel="noopener">Open in Google Maps</a><br><span class="muted">Live update: ${row.location_updated_at?new Date(row.location_updated_at).toLocaleTimeString("en-IN"):"just now"}${row.delivery_accuracy?` • ±${Math.round(row.delivery_accuracy)}m`:""}</span>`;
+    if(!customerLiveMap){
+      customerLiveMap=L.map(mapEl,{zoomControl:true}).setView([lat,lng],16);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(customerLiveMap);
+      customerLiveMarker=L.marker([lat,lng]).addTo(customerLiveMap);
+    }else{
+      customerLiveMap.setView([lat,lng],16);
+      customerLiveMarker.setLatLng([lat,lng]);
+      customerLiveMap.invalidateSize();
+    }
   }catch(e){
     box.style.display="none";
   }
 }
-async function showTracker(){const {data:sessionData}=await db.auth.getSession();if(!sessionData?.session?.user){document.getElementById("tracker").style.display="none";return}const id=localStorage.getItem("delhi6_order_id"),phone=localStorage.getItem("delhi6_order_phone");if(!id||!phone){document.getElementById("tracker").style.display="none";return}try{let {data,error}=await db.rpc("get_order_status",{p_order_id:id,p_phone:phone});if(error)throw error;let row=Array.isArray(data)?data[0]:data;if(!row){document.getElementById("tracker").style.display="none";return}updateTracker(row.status||"Pending",row.total,row.created_at);loadOrderChat();loadDeliveryBoyLiveLocation(id,phone)}catch(e){document.getElementById("tracker").style.display="none"}}
+async function showTracker(){
+const {data:sessionData}=await db.auth.getSession();
+if(!sessionData?.session?.user){document.getElementById("tracker").style.display="none";return}
+const id=localStorage.getItem("delhi6_order_id"),phone=localStorage.getItem("delhi6_order_phone");
+if(!id||!phone){document.getElementById("tracker").style.display="none";return}
+try{
+let {data,error}=await db.rpc("get_order_status",{p_order_id:id,p_phone:phone});
+if(error)throw error;
+let row=Array.isArray(data)?data[0]:data;
+if(!row){document.getElementById("tracker").style.display="none";return}
+updateTracker(row.status||"Pending",row.total,row.created_at);
+loadOrderChat();
+await loadDeliveryBoyLiveLocation(id,phone);
+}catch(e){document.getElementById("tracker").style.display="none"}
+}
 async function cancelMyOrder(){const id=localStorage.getItem("delhi6_order_id"),phone=localStorage.getItem("delhi6_order_phone");if(!id||!phone)return;if(!confirm("Cancel this order?"))return;let {data,error}=await db.rpc("cancel_order",{p_order_id:id,p_phone:phone});if(error)return alert("Unable to cancel: "+error.message);let status=Array.isArray(data)?data[0]?.status:data;if(status==="Cancelled"){updateTracker("Cancelled");alert("Order cancelled.")}else{updateTracker(status||"Pending");alert("This order can no longer be cancelled because processing has started.")}}
 async function loadGeneralMessages(){const box=document.getElementById("myMessages"),list=document.getElementById("myMessagesList"),badge=document.getElementById("messageBadge");if(!box||!list)return;let {data,error}=await db.rpc("get_my_messages");if(error){list.innerHTML='<div class="muted">Unable to load messages.</div>';return}renderMessageList(list,data||[]);if(badge){const unread=(data||[]).filter(m=>m.sender==='admin').length;badge.textContent=unread;badge.style.display=unread?'inline-block':'none'}const floatBadge=document.getElementById("chatFloatBadge");if(floatBadge){const unread=(data||[]).filter(m=>m.sender==='admin').length;floatBadge.textContent=unread;floatBadge.style.display=unread?'block':'none'}}
 function renderMessageList(list,data){list.innerHTML=(data||[]).map(m=>`<div class="chatMsg ${m.sender==='customer'?'customer':'admin'}"><b>${m.sender==='admin'?'Hotel':'You'}</b><br>${esc(m.message)}<div style="font-size:10px;opacity:.65;margin-top:3px">${new Date(m.created_at).toLocaleString('en-IN')}</div></div>`).join('')||'<div class="muted">No messages yet.</div>';list.scrollTop=list.scrollHeight}
@@ -442,7 +479,7 @@ async function sendOrderChat(){const input=document.getElementById("orderChatInp
 document.getElementById("chatPopupInput")?.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendPopupMessage()}});
 document.getElementById("messageInput")?.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendGeneralMessage()}});
 setInterval(()=>{const p=document.getElementById("chatPopup");if(p?.classList.contains("open"))loadPopupMessages()},5000);
-setInterval(showTracker,5000);
+setInterval(()=>{if(document.visibilityState!=='hidden')showTracker()},3000);
 
 loadSiteSettings().then(()=>{updatePaymentUI()});
 load();
