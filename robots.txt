@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://delhi-6.pages.dev/sitemap.xml
