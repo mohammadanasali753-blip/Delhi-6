@@ -3,8 +3,8 @@
 <main class="wrap">
 <section id="login" class="card login"><h2>🚚 Delivery Boy Login</h2><p class="muted">Admin se mila Login ID aur PIN enter karo.</p><input id="loginId" placeholder="Login ID" autocomplete="username"><input id="pin" type="password" inputmode="numeric" maxlength="8" placeholder="4-8 digit PIN" autocomplete="current-password"><button id="loginBtn" style="width:100%;margin-top:8px">Login</button><p id="loginMsg" class="error"></p></section>
 <section id="panel" style="display:none"><div class="card"><div class="grid"><div><b id="boyName">Delivery Boy</b><div class="muted" id="boyPhone"></div></div><div><b>💰 Current Delivery Payment</b><div id="boyPay">₹0</div></div></div></div>
-<div class="card"><h2>📡 My Live Location</h2><div id="myLocationStatus" class="loc">📍 Location not started yet.</div><button onclick="startLiveLocation()">🟢 Start / Resume Live Location</button> <button onclick="requestMyLocation()">📍 Update My Location</button><a id="myLocationMap" href="#" target="_blank" class="map" style="display:none">🗺️ Open My Location</a><p class="muted">Location permission Allow rakho. Live tracking ON rakho. 🧭 Navigate button Google Maps ko alag tab me kholega; is Delhi 6 page ko close mat karna.</p></div>
-<div class="card"><h2>🔔 Delivery Requests</h2><p class="muted">Request me customer ki complete details aur location dikhengi.</p><div id="available">Loading...</div></div>
+<div class="card"><h2>📡 My Live Location</h2><div id="myLocationStatus" class="loc">📍 Location not started yet.</div><button onclick="requestMyLocation()">📍 Update My Location</button><a id="myLocationMap" href="#" target="_blank" class="map" style="display:none">🗺️ Open My Location</a><p class="muted">Location permission Allow rakho. Live location Admin aur Out for Delivery customer ko latest position dikhayegi.</p></div>
+<div class="card"><h2>🔔 Delivery Requests</h2><p class="muted">Request accept karne ke baad customer ki details aur location dikhengi.</p><div id="available">Loading...</div></div>
 <div class="card"><h2>🚚 My Deliveries</h2><div id="mine">Loading...</div></div></section></main>
 <script>
 const SB_URL='https://qxktximeddpttcjkaumo.supabase.co';
@@ -14,6 +14,27 @@ let boy=null,locationWatchId=null;
 const $=id=>document.getElementById(id);
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function money(n){return '₹'+Number(n||0).toLocaleString('en-IN')}
+
+async function getPaymentInfo(orderId){
+  try{
+    const r=await db.from('orders').select('payment_method,payment_status,payment')
+      .eq('id',orderId).maybeSingle();
+    if(r.error) return {method:'',status:''};
+    return {method:String(r.data?.payment_method||''),status:String(r.data?.payment_status||'')};
+  }catch(e){return {method:'',status:''}}
+}
+function paymentBadge(info){
+  const method=(info?.method||'').toLowerCase(), status=(info?.status||'').toLowerCase();
+  const paid=status.includes('paid')||method.includes('razorpay')||method.includes('upi')||method.includes('online');
+  return paid
+    ? '<span class="pill" style="background:#dff7e5;color:#087a2f">🟢 PAID</span>'
+    : '<span class="pill" style="background:#fff0cc;color:#8a5a00">💵 COD / PAYMENT DUE</span>';
+}
+function navigateToCustomer(mapUrl){
+  if(!mapUrl)return;
+  sendLocation();
+  window.open(mapUrl,'_blank','noopener,noreferrer');
+}
 function mapFromAddress(a){const m=String(a||'').match(/https?:\/\/www\.google\.com\/maps\?q=[^\s<]+/i);return m?m[0]:''}
 function setLocationStatus(t){$('myLocationStatus').innerHTML=t}
 function showPanel(){ $('login').style.display='none'; $('panel').style.display='block'; $('logout').style.display='block'; $('boyName').textContent=boy.name||'Delivery Boy'; $('boyPhone').textContent=boy.phone||''; }
@@ -47,20 +68,12 @@ async function saveLiveLocation(p){
 function locationError(e){setLocationStatus('🔴 <b>Location permission/error:</b> '+esc(e.message||'Location unavailable')+'<br><span class="muted">Phone/browser me Location Allow karo.</span>')}
 function startLiveLocation(){if(!navigator.geolocation){locationError({message:'Geolocation supported nahi hai'});return}if(locationWatchId!==null)navigator.geolocation.clearWatch(locationWatchId);setLocationStatus('🟡 Location permission maang raha hai...');locationWatchId=navigator.geolocation.watchPosition(saveLiveLocation,locationError,{enableHighAccuracy:true,maximumAge:5000,timeout:15000})}
 function requestMyLocation(){if(!navigator.geolocation)return locationError({message:'Geolocation supported nahi hai'});setLocationStatus('🟡 Current location le raha hoon...');navigator.geolocation.getCurrentPosition(saveLiveLocation,locationError,{enableHighAccuracy:true,maximumAge:0,timeout:20000})}
-
-function navigateToCustomer(mapUrl){
-  if(!mapUrl) return;
-  // Push the newest GPS position before opening navigation.
-  sendLocation();
-  window.open(mapUrl, '_blank', 'noopener,noreferrer');
-}
-
 async function loadAvailable(){
  const box=$('available');if(!boy)return;try{const r=await db.rpc('delivery_available_orders',{p_delivery_boy_id:boy.id});if(r.error)throw r.error;const rows=r.data||[];if(!rows.length){box.innerHTML='<div class="muted">Abhi koi new delivery request nahi hai.</div>';return}
- box.innerHTML=rows.map(o=>{const map=mapFromAddress(o.address);return `<div class="order"><div><b>Order #${esc(o.order_id)}</b> <span class="pill">${esc(o.status)}</span></div><div class="row">👤 <b>${esc(o.customer_name)}</b></div><div class="row">📞 <a href="tel:${esc(o.phone)}">${esc(o.phone)}</a></div><div class="row">🏠 ${esc(o.address)}</div>${map?`<button type="button" class="map" onclick="navigateToCustomer('${esc(map).replace(/'/g,"&#39;")}')">🧭 Navigate to Customer</button>`:''}
+ box.innerHTML=rows.map(o=>{const map=mapFromAddress(o.address);return `<div class="order"><div><b>Order #${esc(o.order_id)}</b> <span class="pill">${esc(o.status)}</span></div><div class="row">👤 <b>${esc(o.customer_name)}</b></div><div class="row">📞 <a href="tel:${esc(o.phone)}">${esc(o.phone)}</a></div><div class="row">🏠 ${esc(o.address)}</div>${map?`<a class="map" href="${map}" target="_blank" rel="noopener">🧭 Navigate to Customer</a>`:''}
 <div class="row" style="margin-top:8px"><b>📡 Your Live Location</b></div>
 <div id="myLiveLocation_${esc(o.order_id).replace(/[^a-zA-Z0-9_-]/g,'_')}" class="small" style="padding:8px;background:#fff8d6;border-radius:8px">Getting current location...</div>
-<div class="row">🧾 Order Total: <b>${money(o.total)}</b></div><div class="row">💵 Delivery Payment: <b>${money(o.payment)}</b></div><div class="row muted">🕒 Request: ${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</div><button onclick="acceptOrder('${esc(o.order_id)}')">✅ Accept Delivery</button><button class="danger" style="margin-left:6px" onclick="removeRequest('${esc(o.order_id)}')">🗑️ Remove Request</button></div>`}).join('');
+<div class="row">🧾 Order Total: <b>${money(o.total)}</b> <span id="paymine_${esc(o.order_id).replace(/[^a-zA-Z0-9_-]/g,"_")}"></span></div><div class="row">💵 Delivery Payment: <b>${money(o.payment)}</b></div><div class="row muted">🕒 Request: ${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</div><button onclick="acceptOrder('${esc(o.order_id)}')">✅ Accept Delivery</button><button class="danger" style="margin-left:6px" onclick="removeRequest('${esc(o.order_id)}')">🗑️ Remove Request</button></div>`}).join('');
  }catch(e){box.innerHTML='<div class="error">Requests error: '+esc(e.message||e)+'</div>'}
 }
 async function acceptOrder(id){if(!confirm('Ye delivery accept karni hai?'))return;try{const r=await db.rpc('delivery_accept_order',{p_delivery_boy_id:boy.id,p_order_id:String(id)});if(r.error)throw r.error;alert('Delivery accepted successfully.');await loadAll();sendLocation()}catch(e){alert('Accept error: '+(e.message||e))}}
@@ -81,10 +94,10 @@ async function loadMine(){
       <div class="row">👤 <b>${esc(o.customer_name)}</b></div>
       <div class="row">📞 <a href="tel:${esc(o.phone)}">${esc(o.phone)}</a></div>
       <div class="row">🏠 ${esc(o.address)}</div>
-      ${map?`<button type="button" class="map" onclick="navigateToCustomer('${esc(map).replace(/'/g,"&#39;")}')">🧭 Navigate to Customer</button>`:''}
+      ${map?`<a class="map" href="${map}" target="_blank" rel="noopener">🧭 Navigate to Customer</a>`:''}
       <div class="row" style="margin-top:8px"><b>📡 Your Live Location</b></div>
       <div id="${locId}" class="small" style="padding:8px;background:#fff8d6;border-radius:8px">Getting current location...</div>
-      <div class="row">🧾 Order Total: <b>${money(o.total)}</b></div>
+      <div class="row">🧾 Order Total: <b>${money(o.total)}</b> <span id="pay_${esc(o.order_id).replace(/[^a-zA-Z0-9_-]/g,"_")}"></span></div>
       <div class="row">💵 Delivery Payment: <b>${money(o.payment)}</b></div>
       ${active?`<div style="margin-top:10px"><button onclick="updateStatus('${esc(o.order_id)}','Out for Delivery')">🚚 Out for Delivery</button> <button onclick="updateStatus('${esc(o.order_id)}','Delivered')">✅ Delivered</button></div>`:''}
     </div>`
@@ -108,10 +121,4 @@ async function loadAll(){await Promise.all([loadAvailable(),loadMine()]);sendLoc
 function sendLocation(){if(boy&&navigator.geolocation)navigator.geolocation.getCurrentPosition(saveLiveLocation,()=>{},{enableHighAccuracy:true,maximumAge:5000,timeout:15000})}
 const saved=localStorage.getItem('delhi6_delivery_boy');if(saved){try{boy=JSON.parse(saved);if(boy?.id){showPanel();startLiveLocation();loadAll()}}catch(e){localStorage.removeItem('delhi6_delivery_boy')}}
 setInterval(()=>{if(boy){loadAvailable();loadMine();sendLocation();refreshMyLiveLocationBoxes()}},3000);
-
-document.addEventListener('visibilitychange',()=>{
-  if(!document.hidden && boy) startLiveLocation();
-});
-window.addEventListener('pageshow',()=>{ if(boy) startLiveLocation(); });
-
 </script></body></html>
