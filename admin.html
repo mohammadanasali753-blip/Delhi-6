@@ -186,6 +186,33 @@ async function sendOrderReplyFromOrder(oid){
   await loadOrderChats();
 }
 
+async function saveDeliveryOtp(id){
+  const input=document.getElementById('otp_'+id), otp=(input?.value||'').trim();
+  if(!/^[0-9]{4,8}$/.test(otp))return alert('4-8 digit OTP enter karo.');
+  const r=await getDb().rpc('admin_set_delivery_otp',{p_password:ADMIN_PASSWORD,p_order_id:String(id),p_otp:otp});
+  if(r.error)return alert('OTP save failed: '+r.error.message);
+  const msg=document.getElementById('statusMsg_'+id);if(msg)msg.textContent='✅ Delivery OTP saved — customer panel me dikh raha hai.';
+  await loadOrders();
+}
+async function saveOrderStatus(id){
+  const sel=document.getElementById('status_'+id);if(!sel)return;
+  const status=sel.value,msg=document.getElementById('statusMsg_'+id);
+  if(status==='Delivered'){
+    const input=document.getElementById('otp_'+id),otp=(input?.value||'').trim();
+    if(!/^[0-9]{4,8}$/.test(otp))return alert('Delivered karne ke liye customer ka 4-8 digit OTP enter karo.');
+    if(msg)msg.textContent='🔐 OTP verify ho raha hai...';
+    const r=await getDb().rpc('admin_verify_delivery_otp',{p_password:ADMIN_PASSWORD,p_order_id:String(id),p_otp:otp});
+    if(r.error){if(msg)msg.textContent='❌ OTP failed: '+r.error.message;return alert(r.error.message)}
+    if(msg)msg.textContent='✅ OTP verified — Order Delivered.';
+    await loadOrders();await loadDeliveryTracking();return;
+  }
+  if(msg)msg.textContent='Saving...';
+  const r=await getDb().rpc('admin_update_order_status',{p_password:ADMIN_PASSWORD,p_order_id:String(id),p_status:status});
+  if(r.error){if(msg)msg.textContent='❌ Save failed: '+r.error.message;return alert(r.error.message)}
+  if(msg)msg.textContent='✅ Status saved: '+status;
+  await loadOrders();await loadDeliveryTracking();
+}
+
 function sendCustomerLocation(phone,loc,orderId){const d=customerWaPhone(phone);if(!d||!loc)return;const text=`Delhi 6 Hotel Order ${orderId}\n📍 Customer delivery location: ${loc}`;window.open('https://wa.me/'+d+'?text='+encodeURIComponent(text),'_blank')}
 async function deleteOrder(id){if(!confirm('Delete this order permanently?'))return;const r=await getDb().rpc('admin_delete_order',{p_password:ADMIN_PASSWORD,p_order_id:String(id)});if(r.error)alert(r.error.message);else loadOrders()}
 async function loadCustomers(){const r=await getDb().rpc('admin_list_customers',{p_password:ADMIN_PASSWORD});if(r.error){customers.textContent='Unable to load customers: '+r.error.message;return}customers.innerHTML=(r.data||[]).map(c=>{const methods=Array.isArray(c.allowed_payment_methods)?c.allowed_payment_methods:[];const bs=c.ban_start?indiaDateTimeLocal(c.ban_start):'';const be=c.ban_end?indiaDateTimeLocal(c.ban_end):'';return `<div class="customer ${c.blocked?'blocked':''}"><div class="customerHead"><div><b>${esc(c.email||'No email')}</b><br><span class="small">Customer account</span><br><span class="small">${c.blocked?'⛔ Permanently blocked':(c.ban_active?'⏳ Temporary ban active':'✅ Not banned')}</span></div><button onclick="toggleBlock('${c.user_id}',${!!c.blocked})">${c.blocked?'Unblock':'Block'}</button></div><div class="customerTools"><b>💳 Payment options for this customer</b><div class="checkrow"><label><input type="checkbox" id="cod_${c.user_id}" ${methods.includes('Cash on Delivery')?'checked':''}> COD</label><label><input type="checkbox" id="upi_${c.user_id}" ${methods.includes('UPI')?'checked':''}> UPI</label><label><input type="checkbox" id="wallet_${c.user_id}" ${methods.includes('Wallet')?'checked':''}> Wallet</label></div><button style="margin-top:8px" onclick="saveCustomerPayments('${c.user_id}')">Save Payment Options</button><div style="margin-top:10px;padding:10px;border:1px solid #eadb78;border-radius:10px;background:#fff8d6"><b>💰 Customer Wallet</b><div class="small">Current balance: <span id="custWallet_${c.user_id}">Loading...</span></div><div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:6px"><input id="custWalletAmt_${c.user_id}" type="number" min="0.01" step="0.01" placeholder="Amount ₹" style="flex:1;min-width:130px;margin:0"><button onclick="adminCustomerWallet('${c.user_id}','credit')">➕ Add</button><button class="danger" onclick="adminCustomerWallet('${c.user_id}','debit')">➖ Take</button></div></div><div style="margin-top:10px"><b>⛔ Temporary Ban (date + time)</b><div class="banGrid"><div><label>From</label><input id="banStart_${c.user_id}" type="datetime-local" value="${bs}"></div><div><label>Until</label><input id="banEnd_${c.user_id}" type="datetime-local" value="${be}"></div></div><button class="danger" style="margin-top:4px" onclick="saveCustomerBan('${c.user_id}')">Save Ban Dates</button><button style="margin-top:4px;margin-left:6px" onclick="clearCustomerBan('${c.user_id}')">Clear Temporary Ban</button></div></div></div>`}).join('')||'No customers.';(r.data||[]).forEach(c=>loadOneCustomerWallet(c.user_id));}
@@ -263,7 +290,7 @@ async function loadDeliveryTracking(){
     const mapId='adminLiveMap_'+i;
     const map=hasLoc?`https://www.google.com/maps?q=${Number(d.latitude).toFixed(6)},${Number(d.longitude).toFixed(6)}`:'';
     return `<div class="customer" style="margin-bottom:14px">
-      <b>📦 Order ${esc(d.order_id||'-')}</b> • <b>${esc(d.status||'-')}</b><br>      ${String(d.status||'').toLowerCase()==='delivered'?`<button type="button" style="margin:8px 0" onclick="openDeliveryWalletModal('${esc(d.order_id||'')}')">💰 Add Wallet / History</button>`:''}
+      <b>📦 Order ${esc(d.order_id||'-')}</b> • <b>${esc(d.status||'-')}</b><br>      ${d.delivery_otp && !['Delivered','Cancelled'].includes(String(d.status||''))?`<div style="margin:8px 0;padding:9px;border:1px solid #eadb78;border-radius:9px;background:#fff8d6"><b>🔐 Customer Delivery OTP:</b> <span style="font-size:22px;font-weight:900;letter-spacing:4px">${esc(d.delivery_otp)}</span></div>`:''}      ${String(d.status||'').toLowerCase()==='delivered'?`<button type="button" style="margin:8px 0" onclick="openDeliveryWalletModal('${esc(d.order_id||'')}')">💰 Add Wallet / History</button>`:''}
       ${accepted?`<div style="margin:8px 0;padding:9px;border-radius:9px;background:#dcfce7;color:#166534;font-weight:800">🔔 Delivery Boy ne request ACCEPT kar li hai.</div>`:''}
       🚚 <b>${esc(d.name||'Not assigned')}</b> • 📞 ${esc(d.phone||'-')}<br>
       💰 Delivery Payment: ${money(d.payment)}<br>
