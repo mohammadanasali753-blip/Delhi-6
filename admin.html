@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <style>
-.liveMap{width:100%;height:230px;border-radius:14px;overflow:hidden;margin-top:10px;border:1px solid #ddd;position:relative;z-index:1}
+.liveMap{width:100%;height:230px;border-radius:14px;overflow:hidden;margin-top:10px;border:1px solid #ddd;position:relative;z-index:1}.walletModal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:9999;padding:15px}.walletModalBox{background:#fff;width:min(520px,100%);max-height:85vh;overflow:auto;border-radius:16px;padding:18px;box-shadow:0 15px 50px #0005}.walletHistoryRow{border-top:1px solid #ddd;padding:9px 0}
 .liveMap .leaflet-control-attribution{font-size:9px}
 </style>
 </head><body>
@@ -55,6 +55,17 @@
 <div class="panel adminSection" id="walletPanelAdmin"><h2>💰 Wallet Top-ups</h2><p class="small">Approve or reject customer wallet top-up requests after checking the UPI payment.</p><div id="walletTopups">Wallet requests are loading...</div></div>
 </div></div>
 <div class="panel adminSection" id="trackingPanel"><h2>📍 Delivery Tracking & Acceptance</h2><p class="small">Yahan har delivery request ka status, kis delivery boy ne accept ki, customer details aur latest delivery-boy location dikhegi.</p><div id="deliveryTracking">Loading...</div></div>
+<div id="deliveryWalletModal" class="walletModal" onclick="if(event.target===this)closeDeliveryWalletModal()">
+  <div class="walletModalBox">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h3 style="margin:0">💰 Customer Wallet</h3><button type="button" class="danger" onclick="closeDeliveryWalletModal()">✕</button></div>
+    <p id="deliveryWalletCustomer" class="small" style="margin:8px 0"></p>
+    <div style="background:#fff8d6;border-radius:10px;padding:10px;margin:8px 0">Current Balance: <b id="deliveryWalletBalance">₹0</b></div>
+    <label>Amount to add</label><input id="deliveryWalletAmount" type="number" min="0.01" step="0.01" placeholder="Enter amount">
+    <button type="button" onclick="creditDeliveryCustomerWallet()">➕ Add to Wallet</button>
+    <hr><h4 style="margin:8px 0">📜 Wallet Credit History</h4>
+    <div id="deliveryWalletHistory" class="small">Loading...</div>
+  </div>
+</div>
 <script>
 const cfg=window.DELHI6_CONFIG||{};const SB_URL=cfg.SUPABASE_URL||"",SB_KEY=cfg.SUPABASE_ANON_KEY||"";let db=null;let deliveryBoysCache=[];const ADMIN_PASSWORD=cfg.ADMIN_PASSWORD||"";
 function getDb(){if(!db){if(!window.supabase)throw Error("Supabase library did not load.");db=window.supabase.createClient(SB_URL,SB_KEY)}return db}function esc(v){return String(v??"").replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))}function money(n){return "₹"+Number(n||0).toLocaleString("en-IN")}
@@ -209,6 +220,37 @@ const adminLiveMaps={};
 function adminMapId(orderId){
   return "adminLiveMap_"+String(orderId).replace(/[^a-zA-Z0-9_-]/g,"_");
 }
+let deliveryWalletOrderId='';
+async function openDeliveryWalletModal(orderId){
+  deliveryWalletOrderId=String(orderId||'');
+  if(!deliveryWalletOrderId)return;
+  const modal=document.getElementById('deliveryWalletModal'); modal.style.display='flex';
+  document.getElementById('deliveryWalletAmount').value='';
+  document.getElementById('deliveryWalletHistory').textContent='Loading...';
+  const r=await getDb().rpc('admin_order_wallet_info',{p_password:ADMIN_PASSWORD,p_order_id:deliveryWalletOrderId});
+  if(r.error){document.getElementById('deliveryWalletHistory').textContent='Unable to load: '+r.error.message;return}
+  const d=r.data?.[0]||r.data;
+  if(!d){document.getElementById('deliveryWalletHistory').textContent='Customer not found.';return}
+  document.getElementById('deliveryWalletCustomer').innerHTML='Customer ID: <b>'+esc(d.user_id||'-')+'</b><br>Order ID: <b>'+esc(deliveryWalletOrderId)+'</b>';
+  document.getElementById('deliveryWalletBalance').textContent=money(d.balance||0);
+  renderDeliveryWalletHistory(d.history||[]);
+}
+function renderDeliveryWalletHistory(rows){
+  const box=document.getElementById('deliveryWalletHistory');
+  box.innerHTML=(rows||[]).map(x=>`<div class="walletHistoryRow"><b>+ ${money(x.amount)}</b><br>🆔 Customer ID: ${esc(x.user_id||'-')}<br>📦 Order: ${esc(x.order_id||'-')}<br>📅 ${new Date(x.created_at).toLocaleString('en-IN')}</div>`).join('')||'No wallet credits yet.';
+}
+function closeDeliveryWalletModal(){document.getElementById('deliveryWalletModal').style.display='none';deliveryWalletOrderId='';}
+async function creditDeliveryCustomerWallet(){
+  if(!deliveryWalletOrderId)return;
+  const amt=Number(document.getElementById('deliveryWalletAmount').value||0);
+  if(!Number.isFinite(amt)||amt<=0)return alert('Enter a valid amount.');
+  const r=await getDb().rpc('admin_credit_wallet_for_delivered_order',{p_password:ADMIN_PASSWORD,p_order_id:deliveryWalletOrderId,p_amount:amt});
+  if(r.error)return alert(r.error.message);
+  alert('✅ ₹'+amt.toLocaleString('en-IN')+' customer wallet me add ho gaya.');
+  document.getElementById('deliveryWalletAmount').value='';
+  await openDeliveryWalletModal(deliveryWalletOrderId);
+  loadAdminWallet();loadAdminWalletCustomers();loadCustomers();
+}
 async function loadDeliveryTracking(){
   const box=document.getElementById('deliveryTracking');
   if(!box)return;
@@ -224,7 +266,7 @@ async function loadDeliveryTracking(){
     const mapId='adminLiveMap_'+i;
     const map=hasLoc?`https://www.google.com/maps?q=${Number(d.latitude).toFixed(6)},${Number(d.longitude).toFixed(6)}`:'';
     return `<div class="customer" style="margin-bottom:14px">
-      <b>📦 Order ${esc(d.order_id||'-')}</b> • <b>${esc(d.status||'-')}</b><br>
+      <b>📦 Order ${esc(d.order_id||'-')}</b> • <b>${esc(d.status||'-')}</b><br>      ${String(d.status||'').toLowerCase()==='delivered'?`<button type="button" style="margin:8px 0" onclick="openDeliveryWalletModal('${esc(d.order_id||'')}')">💰 Add Wallet / History</button>`:''}
       ${accepted?`<div style="margin:8px 0;padding:9px;border-radius:9px;background:#dcfce7;color:#166534;font-weight:800">🔔 Delivery Boy ne request ACCEPT kar li hai.</div>`:''}
       🚚 <b>${esc(d.name||'Not assigned')}</b> • 📞 ${esc(d.phone||'-')}<br>
       💰 Delivery Payment: ${money(d.payment)}<br>
