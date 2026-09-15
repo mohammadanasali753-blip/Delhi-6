@@ -5,6 +5,7 @@
 <title>Delhi 6 Hotel | Order Online</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#fffaf0;color:#171717}
 /* First-open login gate: visitors see only the hotel name until they log in. */
@@ -74,6 +75,7 @@ body.banned > .banScreen{display:flex!important}
     <div class="walletBalance">₹<span id="walletBalance">0.00</span></div>
     <div class="muted">Available wallet balance</div>
     <input id="walletAmount" class="walletInput" type="number" min="1" step="1" placeholder="Top-up amount ₹">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin:5px 0 8px"><button type="button" class="btn" style="padding:8px 12px;font-size:13px" onclick="setWalletAmount(1)">₹1</button><button type="button" class="btn" style="padding:8px 12px;font-size:13px" onclick="setWalletAmount(10)">₹10</button><button type="button" class="btn" style="padding:8px 12px;font-size:13px" onclick="setWalletAmount(500)">₹500</button><button type="button" class="btn" style="padding:8px 12px;font-size:13px" onclick="setWalletAmount(1000)">₹1000</button></div>
     <select id="walletPayMethod" class="walletInput" style="margin-top:8px">
       <option value="Razorpay">💳 Razorpay</option>
       <option value="UPI">📲 UPI</option>
@@ -82,6 +84,7 @@ body.banned > .banScreen{display:flex!important}
     <div id="walletUpiBox" class="upiBox" style="display:none;margin-top:8px">
       <b>📲 UPI Top-up</b>
       <div id="walletUpiAmount" style="margin-top:5px;font-weight:900"></div>
+      <div id="walletUpiQr" style="display:none;text-align:center;margin:10px auto"></div>
       <div class="muted" style="font-size:12px;margin-top:6px">UPI app me payment karke transaction/reference ID yahan enter karein. UPI top-up wallet me admin verification ke baad add hoga.</div>
       <a id="walletUpiOpen" class="walletPay" href="#" style="margin-top:8px">📲 Open UPI App</a>
       <input id="walletUpiRef" class="walletInput" style="margin-top:8px" placeholder="UPI Transaction / UTR ID">
@@ -128,8 +131,32 @@ function goHome(){closeSideMenu();window.scrollTo({top:0,behavior:"smooth"})}
 function openAccountPanel(){closeSideMenu();const a=document.querySelector(".authbar");if(!a)return;a.classList.add("drawerAccount");a.style.display="block";setTimeout(()=>{if(!document.getElementById("authLoggedIn")||document.getElementById("authLoggedIn").style.display!=="block")document.getElementById("authEmail")?.focus()},50)}
 function closeAccountPanel(){const a=document.querySelector(".loginGateAccount");if(!a)return;if(document.body.classList.contains("loginGateMode")){a.classList.remove("drawerAccount");a.style.display="flex";return}a.classList.remove("drawerAccount");a.style.display="none"}
 async function openPrivate(kind){const {data}=await db.auth.getSession();if(!data?.session?.user){closeSideMenu();openAccountPanel();setAuthMsg("🔐 Please log in to access this section.");return}closeSideMenu();if(kind==="orders"){loadMyOrders();document.getElementById("myOrders")?.scrollIntoView({behavior:"smooth",block:"center"})}if(kind==="tracking"){document.getElementById("tracker").style.display="block";showTracker();document.getElementById("tracker").scrollIntoView({behavior:"smooth",block:"center"})}if(kind==="wallet"){openWallet();document.getElementById("walletPanel")?.scrollIntoView({behavior:"smooth",block:"center"})}if(kind==="messages"){loadGeneralMessages();document.getElementById("myMessages").style.display="block";document.getElementById("myMessages")?.scrollIntoView({behavior:"smooth",block:"center"})}}
+function setWalletAmount(amount){
+  const input=document.getElementById("walletAmount");
+  if(input){input.value=String(amount);input.dispatchEvent(new Event("input",{bubbles:true}));}
+}
+function buildWalletUpiLink(amount){
+  const a=Number(amount);
+  const tr="DELHI6W"+Date.now();
+  return "upi://pay?pa="+encodeURIComponent(settings.upiId||"")+"&pn="+encodeURIComponent("Delhi 6 Hotel")+"&am="+encodeURIComponent(a.toFixed(2))+"&cu=INR&tr="+encodeURIComponent(tr);
+}
+function renderWalletUpiQr(amount){
+  const box=document.getElementById("walletUpiQr");
+  if(!box)return;
+  box.innerHTML="";
+  const a=Number(amount);
+  if(!Number.isFinite(a)||a<1||a>100000||!settings.upiId){box.style.display="none";return;}
+  box.style.display="block";
+  if(typeof QRCode!=="undefined"){
+    new QRCode(box,{text:buildWalletUpiLink(a),width:210,height:210,correctLevel:QRCode.CorrectLevel.M});
+    const cap=document.createElement("div");cap.style.cssText="font-size:12px;color:#555;margin-top:6px";cap.textContent="Scan this QR to pay ₹"+a.toLocaleString("en-IN",{minimumFractionDigits:2});box.appendChild(cap);
+  }else{
+    box.innerHTML='<div style="padding:12px;background:#fff;border-radius:10px">QR loading... Use Open UPI App below.</div>';
+  }
+}
 function openWallet(){
   const panel=document.getElementById("walletPanel");
+  if(!panel)return;
   panel.style.display="block";
   const input=document.getElementById("walletAmount");
   const method=document.getElementById("walletPayMethod");
@@ -138,28 +165,27 @@ function openWallet(){
   const upiAmount=document.getElementById("walletUpiAmount");
   const upiRef=document.getElementById("walletUpiRef");
   const upiOpen=document.getElementById("walletUpiOpen");
+  const upiSubmit=document.getElementById("walletUpiSubmit");
 
   function refreshWalletTopupUI(){
     const m=method?.value||"Razorpay";
-    if(upiBox)upiBox.style.display=m==="UPI"?"block":"none";
-    if(btn){
-      btn.style.display=m==="Razorpay"?"block":"none";
-      btn.textContent="💳 Add Money via Razorpay";
-    }
     const amount=Number(input?.value||0);
-    if(upiAmount)upiAmount.textContent=amount>0?"Payable amount: ₹"+amount.toLocaleString("en-IN",{minimumFractionDigits:2}):"Enter amount first";
-    if(upiOpen)upiOpen.textContent=amount>0?"📲 Open UPI App":"📲 Enter Amount First";
+    if(upiBox)upiBox.style.display=m==="UPI"?"block":"none";
+    if(btn){btn.style.display=m==="Razorpay"?"block":"none";btn.textContent="💳 Add Money via Razorpay";}
+    if(upiAmount)upiAmount.textContent=amount>=1?"Payable amount: ₹"+amount.toLocaleString("en-IN",{minimumFractionDigits:2}):"Enter amount first";
+    if(upiOpen)upiOpen.textContent=amount>=1?"📲 Open UPI App":"📲 Enter Amount First";
+    renderWalletUpiQr(amount);
   }
 
-  method?.addEventListener("change",refreshWalletTopupUI);
-  input?.addEventListener("input",refreshWalletTopupUI);
+  if(!method.dataset.walletBound){method.dataset.walletBound="1";method.addEventListener("change",refreshWalletTopupUI);}
+  if(!input.dataset.walletBound){input.dataset.walletBound="1";input.addEventListener("input",refreshWalletTopupUI);}
 
   btn.onclick=async(e)=>{
     e.preventDefault();
     const amount=Number(input.value||0);
     if(!Number.isFinite(amount)||amount<1||amount>100000)return alert("Enter a valid top-up amount (₹1 to ₹1,00,000).");
     try{
-      btn.textContent="⏳ Opening Razorpay..."; btn.style.pointerEvents="none";
+      btn.textContent="⏳ Opening Razorpay...";btn.style.pointerEvents="none";
       const {data:sd}=await db.auth.getSession();
       if(!sd?.session?.user)throw new Error("Please log in before adding wallet money.");
       const reference="DELHI6-WALLET-"+Date.now();
@@ -176,15 +202,12 @@ function openWallet(){
           description:"Delhi 6 Wallet Top-up",order_id:rp.order_id,
           prefill:{email},notes:{wallet_topup_id:String(topupId)},theme:{color:"#f4c400"},
           handler:async(response)=>{
-            if(done)return; done=true;
+            if(done)return;done=true;
             try{
-              const verified=await callDelhi6Function("verify-wallet-razorpay-payment",{
-                topup_id:String(topupId),razorpay_order_id:String(response.razorpay_order_id||""),
-                razorpay_payment_id:String(response.razorpay_payment_id||""),razorpay_signature:String(response.razorpay_signature||"")
-              },true);
+              const verified=await callDelhi6Function("verify-wallet-razorpay-payment",{topup_id:String(topupId),razorpay_order_id:String(response.razorpay_order_id||""),razorpay_payment_id:String(response.razorpay_payment_id||""),razorpay_signature:String(response.razorpay_signature||"")},true);
               if(!verified?.success)throw new Error(verified?.error||"Wallet payment verification failed.");
-              input.value=""; await loadWalletBalance(); refreshWalletTopupUI();
-              alert("✅ Payment successful! ₹"+amount.toLocaleString("en-IN")+" wallet me automatically add ho gaya."); resolve();
+              input.value="";await loadWalletBalance();refreshWalletTopupUI();
+              alert("✅ Payment successful! ₹"+amount.toLocaleString("en-IN")+" wallet me automatically add ho gaya.");resolve();
             }catch(err){reject(err)}
           },
           modal:{ondismiss:()=>{if(!done){done=true;reject(new Error("Payment cancelled. Wallet was not credited."));}}}
@@ -200,12 +223,10 @@ function openWallet(){
     e.preventDefault();
     const amount=Number(input.value||0);
     if(!Number.isFinite(amount)||amount<1||amount>100000)return alert("Enter a valid top-up amount (₹1 to ₹1,00,000).");
-    const tr="DELHI6"+Date.now();
-    const link="upi://pay?pa="+encodeURIComponent(settings.upiId)+"&pn="+encodeURIComponent("Delhi 6 Hotel")+"&am="+encodeURIComponent(amount.toFixed(2))+"&cu=INR&tr="+encodeURIComponent(tr);
-    window.location.href=link;
+    if(!settings.upiId)return alert("Hotel UPI ID is not configured.");
+    window.location.href=buildWalletUpiLink(amount);
   };
 
-  const upiSubmit=document.getElementById("walletUpiSubmit");
   upiSubmit.onclick=async(e)=>{
     e.preventDefault();
     const amount=Number(input.value||0);
@@ -213,24 +234,18 @@ function openWallet(){
     const ref=(upiRef?.value||"").trim();
     if(!ref)return alert("UPI payment karne ke baad UTR / Transaction ID enter karein.");
     try{
-      upiSubmit.textContent="⏳ Submitting...";
-      upiSubmit.style.pointerEvents="none";
+      upiSubmit.textContent="⏳ Submitting...";upiSubmit.style.pointerEvents="none";
       const {data:sd}=await db.auth.getSession();
       if(!sd?.session?.user)throw new Error("Please log in before adding wallet money.");
-      const {data:topupId,error}=await db.rpc("create_wallet_topup",{
-        p_amount:amount,
-        p_reference:"DELHI6-UPI-"+ref+"|USER_UTR:"+ref
-      });
+      const {data:topupId,error}=await db.rpc("create_wallet_topup",{p_amount:amount,p_reference:"DELHI6-UPI-"+ref+"|USER_UTR:"+ref});
       if(error)throw error;
-      alert("✅ UPI top-up request submit ho gayi. UTR: "+ref+"\\nAdmin verification ke baad ₹"+amount.toLocaleString("en-IN")+" wallet me add hoga.");
-      input.value=""; upiRef.value=""; refreshWalletTopupUI();
-      await loadWalletBalance();
+      alert("✅ UPI top-up request submit ho gayi. UTR: "+ref+"\nAdmin verification ke baad ₹"+amount.toLocaleString("en-IN")+" wallet me add hoga.");
+      input.value="";upiRef.value="";refreshWalletTopupUI();await loadWalletBalance();
     }catch(err){alert(err?.message||"UPI top-up could not be submitted.");}
     finally{upiSubmit.textContent="✅ Submit UTR for Verification";upiSubmit.style.pointerEvents="auto";}
   };
 
-  refreshWalletTopupUI();
-  loadWalletBalance();
+  refreshWalletTopupUI();loadWalletBalance();
 }
 async function loadWalletBalance(){const el=document.getElementById("walletBalance");try{const {data,error}=await db.rpc("get_wallet_balance");if(error)throw error;el.textContent=Number(data||0).toFixed(2)}catch(e){el.textContent="0.00"}}
 async function loadCheckoutWalletBalance(total){const el=document.getElementById("checkoutWalletBalance"),msg=document.getElementById("walletPayMsg");if(!el)return;try{const {data,error}=await db.rpc("get_wallet_balance");if(error)throw error;const bal=Number(data||0);el.textContent=bal.toFixed(2);if(msg){msg.textContent=bal>=Number(total||0)?"Enough balance. Your wallet will be debited after you place the order.":"Insufficient wallet balance. Please add money to your wallet or choose another payment method.";msg.style.color=bal>=Number(total||0)?"#176b2c":"#b00020"}}catch(e){el.textContent="0.00";if(msg){msg.textContent="Wallet balance is unavailable right now. Please choose another payment method.";msg.style.color="#b00020"}}}
