@@ -62,17 +62,49 @@ async function loadDuty(){
   return duty;
  }catch(e){$('dutyStatus').textContent='Duty status error: '+(e.message||e);return 'OFF'}
 }
+async function getCurrentPositionSafe(){
+ return new Promise(resolve=>{
+  if(!navigator.geolocation)return resolve(null);
+  navigator.geolocation.getCurrentPosition(p=>resolve(p),()=>resolve(null),{enableHighAccuracy:true,maximumAge:0,timeout:12000});
+ });
+}
+async function notifyOwnerOffDuty(activeRows,position){
+ if(!activeRows||!activeRows.length)return;
+ const lat=position?.coords?.latitude, lng=position?.coords?.longitude;
+ const locationText=lat!=null&&lng!=null?`Current location: https://www.google.com/maps?q=${lat},${lng}`:'Current location: unavailable';
+ const lines=['⚠️ DELHI 6 DELIVERY BOY OFF DUTY ALERT','',`Delivery Boy: ${boy?.name||'-'}`,`Phone: ${boy?.phone||'-'}`,`Time: ${new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})}`,locationText,'','Accepted deliveries not yet Delivered:'];
+ activeRows.forEach((o,i)=>{lines.push('',`${i+1}. Order #${o.order_id||'-'}`,`Customer: ${o.customer_name||'-'}`,`Customer Phone: ${o.phone||'-'}`,`Address: ${o.address||'-'}`,`Order Total: ${money(o.total||0)}`,`Delivery Payment: ${money(o.payment||0)}`,`Status: ${o.status||'-'}`);});
+ const url='https://wa.me/918750794831?text='+encodeURIComponent(lines.join('\n'));
+ try{window.open(url,'_blank','noopener');}catch(e){location.href=url;}
+}
 async function setDuty(value){
  if(!boy)return;
- const btn=value==='ON'?$('onDutyBtn'):$('offDutyBtn');
- if(btn)btn.disabled=true;
+ const btn=value==='ON'?$('onDutyBtn'):$('offDutyBtn'); if(btn)btn.disabled=true;
  try{
+  let activeRows=[]; let position=null;
+  if(value==='OFF'){
+   const mr=await db.rpc('delivery_my_orders',{p_delivery_boy_id:boy.id});
+   if(!mr.error)activeRows=(mr.data||[]).filter(o=>o.status!=='Delivered'&&o.status!=='Cancelled');
+   if(activeRows.length)position=await getCurrentPositionSafe();
+  }
   const r=await db.rpc('delivery_set_duty',{p_delivery_boy_id:boy.id,p_duty_status:value});
   if(r.error)throw r.error;
   await loadDuty();
-  if(value==='ON'){startLiveLocation();sendLocation();}else{if(locationWatchId!==null&&navigator.geolocation)navigator.geolocation.clearWatch(locationWatchId);locationWatchId=null;setLocationStatus('🔴 <b>Live location stopped because you are OFF DUTY.</b>');}
+  if(value==='ON'){
+   startLiveLocation(); sendLocation();
+  }else{
+   if(locationWatchId!==null&&navigator.geolocation)navigator.geolocation.clearWatch(locationWatchId);
+   locationWatchId=null;
+   setLocationStatus('🔴 <b>Live location stopped because you are OFF DUTY.</b>');
+   if(activeRows.length){
+    await notifyOwnerOffDuty(activeRows,position);
+    alert('⚠️ You went OFF DUTY with an active accepted delivery. Owner WhatsApp alert has been prepared with order details and your current location.');
+   }
+  }
+  await loadAll();
  }catch(e){alert('Duty status error: '+(e.message||e));await loadDuty()}
 }
+
 async function loadTodaySummary(){
  if(!boy)return;
  try{
@@ -94,7 +126,7 @@ async function loadAvailable(){
 <button onclick="acceptOrder('${esc(o.order_id)}')">✅ Accept Delivery</button><button class="danger" style="margin-left:6px" onclick="removeRequest('${esc(o.order_id)}')">🗑️ Remove Request</button></div>`).join('');
  }catch(e){box.innerHTML='<div class="error">Requests error: '+esc(e.message||e)+'</div>'}
 }
-async function acceptOrder(id){if(!confirm('Ye delivery accept karni hai?'))return;try{const r=await db.rpc('delivery_accept_order',{p_delivery_boy_id:boy.id,p_order_id:String(id)});if(r.error)throw r.error;alert('Delivery accepted successfully.');await loadAll();sendLocation()}catch(e){alert('Accept error: '+(e.message||e))}}
+async function acceptOrder(id){if(!confirm('Ye delivery accept karni hai?'))return;try{const duty=await loadDuty();if(duty!=='ON'){return alert('🔴 OFF DUTY par delivery request accept nahi kar sakte. Pehle ON DUTY karein.')}const r=await db.rpc('delivery_accept_order',{p_delivery_boy_id:boy.id,p_order_id:String(id)});if(r.error)throw r.error;alert('Delivery accepted successfully.\n\n⚠️ सावधान: आपकी live location होटल मालिक के पास जा रही है। कृपया सतर्क रहें और अपना ख्याल रखें।');await loadAll();sendLocation()}catch(e){alert('Accept error: '+(e.message||e))}}
 async function removeRequest(id){if(!confirm('Is delivery request ko remove karna hai?'))return;try{const r=await db.rpc('delivery_remove_request',{p_delivery_boy_id:boy.id,p_order_id:String(id)});if(r.error)throw r.error;await loadAvailable()}catch(e){alert('Remove error: '+(e.message||e))}}
 async function loadMine(){
  const box=$('mine');if(!boy)return;
@@ -157,7 +189,10 @@ async function showHistory(){
   if(r.error)throw r.error;
   const rows=r.data||[];
   if(!rows.length){body.innerHTML='<div class="muted">No completed rides yet.</div>';return}
-  body.innerHTML=rows.map((x,i)=>`<div class="historyItem"><b>#${esc(x.order_id)}</b><br>📅 ${x.completed_at?new Date(x.completed_at).toLocaleString('en-IN',{timeZone:'Asia/Kolkata'}):'-'}<br>💰 Earning: <b>${money(x.amount)}</b></div>`).join('');
+  const daily={}; let grand=0; rows.forEach(x=>{const dt=x.completed_at?new Date(x.completed_at):null; const day=dt?dt.toLocaleDateString('en-IN',{timeZone:'Asia/Kolkata'}):'Unknown date'; const amt=Number(x.amount||0); daily[day]=(daily[day]||0)+amt; grand+=amt;});
+  const dailyHtml=Object.entries(daily).map(([day,total])=>`<div class="historyItem"><b>📅 ${esc(day)}</b><br>💰 Total earned that day: <b>${money(total)}</b></div>`).join('');
+  const ridesHtml=rows.map(x=>`<div class="historyItem"><b>#${esc(x.order_id)}</b><br>📅 ${x.completed_at?new Date(x.completed_at).toLocaleString('en-IN',{timeZone:'Asia/Kolkata'}):'-'}<br>💰 Earning: <b>${money(x.amount)}</b></div>`).join('');
+  body.innerHTML=`<div style="padding:12px;background:#fff8d6;border:1px solid #eadb78;border-radius:12px;margin-bottom:12px"><b>💰 Total Earnings: ${money(grand)}</b></div><h3>Daily Total</h3>${dailyHtml}<h3 style="margin-top:16px">Completed Rides</h3>${ridesHtml}`;
  }catch(e){body.innerHTML='<div class="error">History error: '+esc(e.message||e)+'</div>'}
 }
 function closeHistory(){const m=$('historyModal');if(m)m.style.display='none'}
