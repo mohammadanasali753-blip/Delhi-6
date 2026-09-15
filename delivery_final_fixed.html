@@ -124,7 +124,7 @@ async function loadAvailable(){
 <div class="row">💵 Delivery Payment: <b>${money(o.payment)}</b></div>
 <div class="row muted">🕒 Request: ${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</div>
 <div class="loc" style="margin:10px 0">🔒 Customer name, phone, address aur location <b>Accept karne ke baad</b> dikhegi.</div>
-<button onclick="acceptOrder('${esc(o.order_id)}')">✅ Accept Delivery</button><button class="danger" style="margin-left:6px" onclick="removeRequest('${esc(o.order_id)}')">🗑️ Remove Request</button></div>`).join('');
+<button ${currentDuty==='ON'?'':'disabled'} onclick="acceptOrder('${esc(o.order_id)}')">${currentDuty==='ON'?'✅ Accept Delivery':'🔴 ON DUTY required to accept'}</button><button class="danger" style="margin-left:6px" onclick="removeRequest('${esc(o.order_id)}')">🗑️ Remove Request</button></div>`).join('');
  }catch(e){box.innerHTML='<div class="error">Requests error: '+esc(e.message||e)+'</div>'}
 }
 async function acceptOrder(id){if(!confirm('Ye delivery accept karni hai?'))return;try{const duty=await loadDuty();if(duty!=='ON'){return alert('🔴 OFF DUTY par delivery request accept nahi kar sakte. Pehle ON DUTY karein.')}const r=await db.rpc('delivery_accept_order',{p_delivery_boy_id:boy.id,p_order_id:String(id)});if(r.error)throw r.error;alert('Delivery accepted successfully.\n\n⚠️ सावधान: आपकी live location होटल मालिक के पास जा रही है। कृपया सतर्क रहें और अपना ख्याल रखें।');await loadAll();sendLocation()}catch(e){alert('Accept error: '+(e.message||e))}}
