@@ -1,5 +1,5 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Delhi 6 — Delivery Boy</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#fffaf0;color:#171717}.head{background:#f4c400;padding:16px 5%;font-size:21px;font-weight:900;display:flex;justify-content:space-between;align-items:center}.wrap{max-width:900px;margin:auto;padding:20px 5%}.card{background:#fff;border-radius:18px;padding:18px;margin-bottom:16px;box-shadow:0 4px 18px #0002}input{width:100%;padding:12px;margin:6px 0;border:1px solid #ccc;border-radius:9px;font:inherit}button{padding:11px 15px;border:0;border-radius:9px;background:#f4c400;font-weight:900;cursor:pointer}.dark{background:#171717;color:#fff}.danger{background:#b00020;color:#fff}.muted{color:#666;font-size:13px}.order{border:1px solid #ddd;border-radius:14px;padding:14px;margin:10px 0}.pill{display:inline-block;padding:5px 8px;border-radius:20px;background:#eee;font-size:12px;font-weight:800}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:650px){.grid{grid-template-columns:1fr}}.loc{background:#eaf6ff;padding:10px;border-radius:10px;margin:8px 0}.success{color:#087a2f;font-weight:800}.error{color:#b00020;font-weight:800}.login{max-width:450px;margin:60px auto}.map{display:inline-block;margin-top:7px;text-decoration:none;font-weight:800;color:#075ea8}.row{margin:7px 0}</style></head><body>
-<header class="head"><span>🚚 Delhi 6 — Delivery Boy</span><button id="logout" class="dark" onclick="logout()" style="display:none">Logout</button></header>
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Delhi 6 — Delivery Boy</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#fffaf0;color:#171717}.head{background:#f4c400;padding:16px 5%;font-size:21px;font-weight:900;display:flex;justify-content:space-between;align-items:center}.wrap{max-width:900px;margin:auto;padding:20px 5%}.card{background:#fff;border-radius:18px;padding:18px;margin-bottom:16px;box-shadow:0 4px 18px #0002}input{width:100%;padding:12px;margin:6px 0;border:1px solid #ccc;border-radius:9px;font:inherit}button{padding:11px 15px;border:0;border-radius:9px;background:#f4c400;font-weight:900;cursor:pointer}.dark{background:#171717;color:#fff}.danger{background:#b00020;color:#fff}.muted{color:#666;font-size:13px}.order{border:1px solid #ddd;border-radius:14px;padding:14px;margin:10px 0}.pill{display:inline-block;padding:5px 8px;border-radius:20px;background:#eee;font-size:12px;font-weight:800}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:650px){.grid{grid-template-columns:1fr}}.loc{background:#eaf6ff;padding:10px;border-radius:10px;margin:8px 0}.success{color:#087a2f;font-weight:800}.error{color:#b00020;font-weight:800}.login{max-width:450px;margin:60px auto}.map{display:inline-block;margin-top:7px;text-decoration:none;font-weight:800;color:#075ea8}.row{margin:7px 0}.menuBtn{background:#171717;color:#fff;font-size:22px;padding:8px 12px}.sideMenu{position:fixed;top:0;right:-320px;width:300px;max-width:85vw;height:100vh;background:#fff;z-index:9999;box-shadow:-8px 0 25px #0003;padding:20px;transition:right .25s;overflow:auto}.sideMenu.open{right:0}.menuOverlay{position:fixed;inset:0;background:#0007;z-index:9998;display:none}.menuOverlay.open{display:block}.historyItem{border:1px solid #ddd;border-radius:12px;padding:12px;margin:9px 0;background:#fff}.editAmount{width:130px;margin-right:6px}</style></head><body>
+<header class="head"><span>🚚 Delhi 6 — Delivery Boy</span><div style="display:flex;gap:6px;align-items:center"><button id="menuBtn" class="menuBtn" onclick="toggleMenu()" style="display:none">☰</button><button id="logout" class="dark" onclick="logout()" style="display:none">Logout</button></div></header><div id="menuOverlay" class="menuOverlay" onclick="closeMenu()"></div><aside id="sideMenu" class="sideMenu"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin-top:0">☰ Menu</h2><button class="dark" onclick="closeMenu()">✕</button></div><button style="width:100%;margin:6px 0" onclick="showHistory();closeMenu()">📊 Riding & Earning History</button></aside>
 <main class="wrap">
 <section id="login" class="card login"><h2>🚚 Delivery Boy Login</h2><p class="muted">Admin se mila Login ID aur PIN enter karo.</p><input id="loginId" placeholder="Login ID" autocomplete="username"><input id="pin" type="password" inputmode="numeric" maxlength="8" placeholder="4-8 digit PIN" autocomplete="current-password"><button id="loginBtn" style="width:100%;margin-top:8px">Login</button><p id="loginMsg" class="error"></p></section>
 <section id="panel" style="display:none"><div class="card"><div class="grid"><div><b id="boyName">Delivery Boy</b><div class="muted" id="boyPhone"></div></div><div><b>💰 Current Delivery Payment</b><div id="boyPay">₹0</div></div></div></div>
@@ -18,7 +18,7 @@ function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function money(n){return '₹'+Number(n||0).toLocaleString('en-IN')}
 function mapFromAddress(a){const m=String(a||'').match(/https?:\/\/www\.google\.com\/maps\?q=[^\s<]+/i);return m?m[0]:''}
 function setLocationStatus(t){$('myLocationStatus').innerHTML=t}
-function showPanel(){ $('login').style.display='none'; $('panel').style.display='block'; $('logout').style.display='block'; $('boyName').textContent=boy.name||'Delivery Boy'; $('boyPhone').textContent=boy.phone||''; }
+function showPanel(){ $('login').style.display='none'; $('panel').style.display='block'; $('logout').style.display='block'; $('menuBtn').style.display='block'; $('boyName').textContent=boy.name||'Delivery Boy'; $('boyPhone').textContent=boy.phone||''; }
 async function login(){
  const id=$('loginId').value.trim(),pin=$('pin').value.trim(),msg=$('loginMsg');
  msg.textContent='';
@@ -132,6 +132,28 @@ async function refreshMyLiveLocationBoxes(){
  },()=>{});
 }
 async function updateStatus(id,status){try{const r=await db.rpc('delivery_update_status',{p_delivery_boy_id:boy.id,p_order_id:String(id),p_status:status});if(r.error)throw r.error;await loadMine();sendLocation()}catch(e){alert('Status error: '+(e.message||e))}}
+async function toggleMenu(){const m=$('sideMenu');const o=$('menuOverlay');m.classList.toggle('open');o.classList.toggle('open')}
+function closeMenu(){$('sideMenu').classList.remove('open');$('menuOverlay').classList.remove('open')}
+async function showHistory(){
+ if(!boy)return;
+ let modal=document.getElementById('historyModal');
+ if(!modal){
+  modal=document.createElement('div');modal.id='historyModal';
+  modal.style='position:fixed;inset:0;background:#0008;z-index:10000;display:flex;align-items:center;justify-content:center;padding:18px';
+  modal.innerHTML='<div style="background:#fff;width:100%;max-width:650px;max-height:90vh;overflow:auto;border-radius:18px;padding:18px"><div style="display:flex;justify-content:space-between;align-items:center"><h2>📊 Riding & Earning History</h2><button class="dark" onclick="closeHistory()">✕</button></div><div id="historyBody">Loading...</div></div>';
+  document.body.appendChild(modal);
+ }
+ modal.style.display='flex';
+ const body=$('historyBody');body.textContent='Loading history...';
+ try{
+  const r=await db.rpc('delivery_earning_history',{p_delivery_boy_id:boy.id});
+  if(r.error)throw r.error;
+  const rows=r.data||[];
+  if(!rows.length){body.innerHTML='<div class="muted">No completed rides yet.</div>';return}
+  body.innerHTML=rows.map((x,i)=>`<div class="historyItem"><b>#${esc(x.order_id)}</b><br>📅 ${x.completed_at?new Date(x.completed_at).toLocaleString('en-IN',{timeZone:'Asia/Kolkata'}):'-'}<br>💰 Earning: <b>${money(x.amount)}</b></div>`).join('');
+ }catch(e){body.innerHTML='<div class="error">History error: '+esc(e.message||e)+'</div>'}
+}
+function closeHistory(){const m=$('historyModal');if(m)m.style.display='none'}
 async function loadAll(){await Promise.all([loadAvailable(),loadMine(),loadDuty(),loadTodaySummary()]);sendLocation()}
 function sendLocation(){if(boy&&navigator.geolocation)navigator.geolocation.getCurrentPosition(saveLiveLocation,()=>{},{enableHighAccuracy:true,maximumAge:5000,timeout:15000})}
 const saved=localStorage.getItem('delhi6_delivery_boy');if(saved){try{boy=JSON.parse(saved);if(boy?.id){showPanel();loadAll()}}catch(e){localStorage.removeItem('delhi6_delivery_boy')}}
