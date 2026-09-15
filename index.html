@@ -74,8 +74,20 @@ body.banned > .banScreen{display:flex!important}
     <div class="walletBalance">₹<span id="walletBalance">0.00</span></div>
     <div class="muted">Available wallet balance</div>
     <input id="walletAmount" class="walletInput" type="number" min="1" step="1" placeholder="Top-up amount ₹">
-    <a id="walletPay" class="walletPay" href="#">📲 Add Money via UPI</a>
-    <div class="walletNote">Wallet top-ups are added automatically after successful Razorpay payment verification.</div>
+    <select id="walletPayMethod" class="walletInput" style="margin-top:8px">
+      <option value="Razorpay">💳 Razorpay</option>
+      <option value="UPI">📲 UPI</option>
+    </select>
+    <a id="walletPay" class="walletPay" href="#">💳 Add Money via Razorpay</a>
+    <div id="walletUpiBox" class="upiBox" style="display:none;margin-top:8px">
+      <b>📲 UPI Top-up</b>
+      <div id="walletUpiAmount" style="margin-top:5px;font-weight:900"></div>
+      <div class="muted" style="font-size:12px;margin-top:6px">UPI app me payment karke transaction/reference ID yahan enter karein. UPI top-up wallet me admin verification ke baad add hoga.</div>
+      <a id="walletUpiOpen" class="walletPay" href="#" style="margin-top:8px">📲 Open UPI App</a>
+      <input id="walletUpiRef" class="walletInput" style="margin-top:8px" placeholder="UPI Transaction / UTR ID">
+      <a id="walletUpiSubmit" class="walletPay" href="#" style="margin-top:8px">✅ Submit UTR for Verification</a>
+    </div>
+    <div class="walletNote">Razorpay top-up automatically verify hokar wallet me add hota hai. UPI top-up payment ke baad UTR/reference ID se verification hoga.</div>
   </div>
   <div id="drawerHint" class="muted" style="margin-top:14px;font-size:13px">My Orders, tracking, wallet and messages are available after login.</div>
 </aside><div class="authbar loginGateAccount"><div class="authbox loginGateBox"><button class="close" onclick="closeAccountPanel()" style="float:right">×</button><b class="loginGateTitle">👤 Login to Delhi 6 Hotel</b><span class="loginGateSub">Continue with Google to view the menu and place your order.</span><div id="authLoggedOut" class="authrow" style="margin-top:14px"><button type="button" class="btn google" style="width:100%;min-height:50px;font-size:16px" onclick="googleLogin()"><b class="gIcon">G</b> Continue with Google</button></div><div id="authLoggedIn" style="display:none;margin-top:9px"><span id="authUserText"></span> <button class="btn" onclick="openPrivate('orders')">📦 My Orders</button> <button class="btn" onclick="logoutCustomer()">Logout</button></div><div id="authMsg" class="muted authMsg" style="margin-top:10px"></div></div></div><div id="banScreen" class="authbar banScreen"><div class="banCard"><h2>⛔ Your Profile Is Temporarily Banned</h2><div id="banMessage">Your profile is blocked by the hotel.</div><div class="banTime">From: <span id="banFromText">--</span><br>Until: <span id="banUntilText">--</span></div><div class="owner">Please contact the owner for help.</div><a class="banWa" href="https://wa.me/918750794831" target="_blank">💬 WhatsApp Owner</a><a class="banCall" href="tel:+918750794831">📞 Call Owner</a><div style="margin-top:12px;font-size:13px;color:#666">Owner: +91 8750794831</div></div></div>
@@ -120,11 +132,32 @@ function openWallet(){
   const panel=document.getElementById("walletPanel");
   panel.style.display="block";
   const input=document.getElementById("walletAmount");
+  const method=document.getElementById("walletPayMethod");
   const btn=document.getElementById("walletPay");
+  const upiBox=document.getElementById("walletUpiBox");
+  const upiAmount=document.getElementById("walletUpiAmount");
+  const upiRef=document.getElementById("walletUpiRef");
+  const upiOpen=document.getElementById("walletUpiOpen");
+
+  function refreshWalletTopupUI(){
+    const m=method?.value||"Razorpay";
+    if(upiBox)upiBox.style.display=m==="UPI"?"block":"none";
+    if(btn){
+      btn.style.display=m==="Razorpay"?"block":"none";
+      btn.textContent="💳 Add Money via Razorpay";
+    }
+    const amount=Number(input?.value||0);
+    if(upiAmount)upiAmount.textContent=amount>0?"Payable amount: ₹"+amount.toLocaleString("en-IN",{minimumFractionDigits:2}):"Enter amount first";
+    if(upiOpen)upiOpen.textContent=amount>0?"📲 Open UPI App":"📲 Enter Amount First";
+  }
+
+  method?.addEventListener("change",refreshWalletTopupUI);
+  input?.addEventListener("input",refreshWalletTopupUI);
+
   btn.onclick=async(e)=>{
     e.preventDefault();
     const amount=Number(input.value||0);
-    if(amount<=0||amount>100000)return alert("Enter a valid top-up amount (₹1 to ₹1,00,000).");
+    if(!Number.isFinite(amount)||amount<1||amount>100000)return alert("Enter a valid top-up amount (₹1 to ₹1,00,000).");
     try{
       btn.textContent="⏳ Opening Razorpay..."; btn.style.pointerEvents="none";
       const {data:sd}=await db.auth.getSession();
@@ -133,6 +166,7 @@ function openWallet(){
       const {data:topupId,error:topupError}=await db.rpc("create_wallet_topup",{p_amount:amount,p_reference:reference});
       if(topupError)throw topupError;
       const rp=await callDelhi6Function("create-wallet-razorpay-order",{topup_id:String(topupId),amount:Number(amount)},true);
+      if(!rp?.order_id||!rp?.key_id)throw new Error("Razorpay order could not be created.");
       if(typeof Razorpay==="undefined")throw new Error("Razorpay is still loading. Please try again.");
       const email=sd.session.user.email||"";
       await new Promise((resolve,reject)=>{
@@ -149,8 +183,8 @@ function openWallet(){
                 razorpay_payment_id:String(response.razorpay_payment_id||""),razorpay_signature:String(response.razorpay_signature||"")
               },true);
               if(!verified?.success)throw new Error(verified?.error||"Wallet payment verification failed.");
-              input.value=""; await loadWalletBalance();
-              alert("✅ Payment successful! ₹"+Number(amount).toLocaleString("en-IN")+" wallet me add ho gaya."); resolve();
+              input.value=""; await loadWalletBalance(); refreshWalletTopupUI();
+              alert("✅ Payment successful! ₹"+amount.toLocaleString("en-IN")+" wallet me automatically add ho gaya."); resolve();
             }catch(err){reject(err)}
           },
           modal:{ondismiss:()=>{if(!done){done=true;reject(new Error("Payment cancelled. Wallet was not credited."));}}}
@@ -161,6 +195,41 @@ function openWallet(){
     }catch(err){alert(err?.message||"Wallet payment could not be completed.");}
     finally{btn.textContent="💳 Add Money via Razorpay";btn.style.pointerEvents="auto";}
   };
+
+  upiOpen.onclick=(e)=>{
+    e.preventDefault();
+    const amount=Number(input.value||0);
+    if(!Number.isFinite(amount)||amount<1||amount>100000)return alert("Enter a valid top-up amount (₹1 to ₹1,00,000).");
+    const tr="DELHI6"+Date.now();
+    const link="upi://pay?pa="+encodeURIComponent(settings.upiId)+"&pn="+encodeURIComponent("Delhi 6 Hotel")+"&am="+encodeURIComponent(amount.toFixed(2))+"&cu=INR&tr="+encodeURIComponent(tr);
+    window.location.href=link;
+  };
+
+  const upiSubmit=document.getElementById("walletUpiSubmit");
+  upiSubmit.onclick=async(e)=>{
+    e.preventDefault();
+    const amount=Number(input.value||0);
+    if(!Number.isFinite(amount)||amount<1||amount>100000)return alert("Enter a valid top-up amount (₹1 to ₹1,00,000).");
+    const ref=(upiRef?.value||"").trim();
+    if(!ref)return alert("UPI payment karne ke baad UTR / Transaction ID enter karein.");
+    try{
+      upiSubmit.textContent="⏳ Submitting...";
+      upiSubmit.style.pointerEvents="none";
+      const {data:sd}=await db.auth.getSession();
+      if(!sd?.session?.user)throw new Error("Please log in before adding wallet money.");
+      const {data:topupId,error}=await db.rpc("create_wallet_topup",{
+        p_amount:amount,
+        p_reference:"DELHI6-UPI-"+ref+"|USER_UTR:"+ref
+      });
+      if(error)throw error;
+      alert("✅ UPI top-up request submit ho gayi. UTR: "+ref+"\\nAdmin verification ke baad ₹"+amount.toLocaleString("en-IN")+" wallet me add hoga.");
+      input.value=""; upiRef.value=""; refreshWalletTopupUI();
+      await loadWalletBalance();
+    }catch(err){alert(err?.message||"UPI top-up could not be submitted.");}
+    finally{upiSubmit.textContent="✅ Submit UTR for Verification";upiSubmit.style.pointerEvents="auto";}
+  };
+
+  refreshWalletTopupUI();
   loadWalletBalance();
 }
 async function loadWalletBalance(){const el=document.getElementById("walletBalance");try{const {data,error}=await db.rpc("get_wallet_balance");if(error)throw error;el.textContent=Number(data||0).toFixed(2)}catch(e){el.textContent="0.00"}}
