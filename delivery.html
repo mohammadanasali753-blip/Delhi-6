@@ -85,10 +85,12 @@ async function loadTodaySummary(){
 }
 async function loadAvailable(){
  const box=$('available');if(!boy)return;try{const r=await db.rpc('delivery_available_orders',{p_delivery_boy_id:boy.id});if(r.error)throw r.error;const rows=r.data||[];if(!rows.length){box.innerHTML='<div class="muted">Abhi koi new delivery request nahi hai.</div>';return}
- box.innerHTML=rows.map(o=>{const map=mapFromAddress(o.address);return `<div class="order"><div><b>Order #${esc(o.order_id)}</b> <span class="pill">${esc(o.status)}</span></div><div class="row">👤 <b>${esc(o.customer_name)}</b></div><div class="row">📞 <a href="tel:${esc(o.phone)}">${esc(o.phone)}</a></div><div class="row">🏠 ${esc(o.address)}</div>${map?`<a class="map" href="${map}" target="_blank">📍 Customer Location</a>`:''}
-<div class="row" style="margin-top:8px"><b>📡 Your Live Location</b></div>
-<div id="myLiveLocation_${esc(o.order_id).replace(/[^a-zA-Z0-9_-]/g,'_')}" class="small" style="padding:8px;background:#fff8d6;border-radius:8px">Getting current location...</div>
-<div class="row">🧾 Order Total: <b>${money(o.total)}</b></div><div class="row">💵 Delivery Payment: <b>${money(o.payment)}</b></div><div class="row muted">🕒 Request: ${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</div><button onclick="acceptOrder('${esc(o.order_id)}')">✅ Accept Delivery</button><button class="danger" style="margin-left:6px" onclick="removeRequest('${esc(o.order_id)}')">🗑️ Remove Request</button></div>`}).join('');
+ box.innerHTML=rows.map(o=>`<div class="order"><div><b>Order #${esc(o.order_id)}</b> <span class="pill">New Request</span></div>
+<div class="row">🧾 Order Total: <b>${money(o.total)}</b></div>
+<div class="row">💵 Delivery Payment: <b>${money(o.payment)}</b></div>
+<div class="row muted">🕒 Request: ${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</div>
+<div class="loc" style="margin:10px 0">🔒 Customer name, phone, address aur location <b>Accept karne ke baad</b> dikhegi.</div>
+<button onclick="acceptOrder('${esc(o.order_id)}')">✅ Accept Delivery</button><button class="danger" style="margin-left:6px" onclick="removeRequest('${esc(o.order_id)}')">🗑️ Remove Request</button></div>`).join('');
  }catch(e){box.innerHTML='<div class="error">Requests error: '+esc(e.message||e)+'</div>'}
 }
 async function acceptOrder(id){if(!confirm('Ye delivery accept karni hai?'))return;try{const r=await db.rpc('delivery_accept_order',{p_delivery_boy_id:boy.id,p_order_id:String(id)});if(r.error)throw r.error;alert('Delivery accepted successfully.');await loadAll();sendLocation()}catch(e){alert('Accept error: '+(e.message||e))}}
