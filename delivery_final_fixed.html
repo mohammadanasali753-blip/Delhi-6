@@ -7,12 +7,12 @@
 <div class="card"><h2>📊 Today's Summary</h2><div class="grid"><div><b>Completed Rides</b><div id="todayRides" style="font-size:24px">0</div></div><div><b>Today's Earnings</b><div id="todayEarned" style="font-size:24px">₹0</div></div></div><div id="todaySummaryTime" class="muted" style="margin-top:8px"></div></div>
 <div class="card"><h2>📡 My Live Location</h2><div id="myLocationStatus" class="loc">📍 Location not started yet.</div><button onclick="requestMyLocation()">📍 Update My Location</button><a id="myLocationMap" href="#" target="_blank" class="map" style="display:none">🗺️ Open My Location</a><p class="muted">Location permission Allow rakho. Location Admin aur active customer ko latest position dikhayegi.</p></div>
 <div class="card"><h2>🔔 Delivery Requests</h2><p class="muted">Request me customer ki complete details aur location dikhengi.</p><div id="available">Loading...</div></div>
-<div id="acceptedSafetyNotice" class="card" style="display:none"><div class="liveSafetyNotice">⚠️ <b>सावधान:</b> आपकी live location होटल मालिक के पास जा रही है। कृपया सतर्क रहें और अपना ख्याल रखें।</div></div><div class="card"><h2>🚚 My Deliveries</h2><div id="mine">Loading...</div></div></section></main>
+<div id="acceptedSafetyNotice" class="card" style="display:none;background:#fff3cd;border:3px solid #d97706"><div class="liveSafetyNotice" style="font-size:18px;line-height:1.5;font-weight:800">⚠️ <b>सावधान:</b> आपकी live location होटल मालिक के पास जा रही है। कृपया सतर्क रहें और अपना ख्याल रखें।</div></div><div class="card"><h2>🚚 My Deliveries</h2><div id="mine">Loading...</div></div></section></main>
 <script>
 const SB_URL='https://qxktximeddpttcjkaumo.supabase.co';
 const SB_KEY='sb_publishable_mUL6OaOwJ649Xi68uQOcLw_9g0fM8mM';
 const db=window.supabase.createClient(SB_URL,SB_KEY);
-let boy=null,locationWatchId=null,activeDeliveryCount=0;
+let boy=null,locationWatchId=null,activeDeliveryCount=0,currentDuty='OFF';
 const $=id=>document.getElementById(id);
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function money(n){return '₹'+Number(n||0).toLocaleString('en-IN')}
@@ -37,7 +37,7 @@ async function login(){
 $('loginBtn').addEventListener('click',login);$('pin').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
 function logout(){if(locationWatchId!==null&&navigator.geolocation)navigator.geolocation.clearWatch(locationWatchId);localStorage.removeItem('delhi6_delivery_boy');location.reload()}
 async function saveLiveLocation(p){
- if(!boy||activeDeliveryCount<=0)return;
+ if(!boy||currentDuty!=='ON'||activeDeliveryCount<=0)return;
  try{
    const r=await db.rpc('delivery_update_location',{p_delivery_boy_id:boy.id,p_lat:p.coords.latitude,p_lng:p.coords.longitude,p_accuracy:p.coords.accuracy||null});
    if(r.error)throw r.error;
@@ -48,8 +48,8 @@ async function saveLiveLocation(p){
  }catch(e){setLocationStatus('🔴 Location save error: '+esc(e.message||e))}
 }
 function locationError(e){setLocationStatus('🔴 <b>Location permission/error:</b> '+esc(e.message||'Location unavailable')+'<br><span class="muted">Phone/browser me Location Allow karo.</span>')}
-function startLiveLocation(){if(!navigator.geolocation){locationError({message:'Geolocation supported nahi hai'});return}if(locationWatchId!==null)navigator.geolocation.clearWatch(locationWatchId);setLocationStatus('🟡 Location permission maang raha hai...');locationWatchId=navigator.geolocation.watchPosition(saveLiveLocation,locationError,{enableHighAccuracy:true,maximumAge:5000,timeout:15000})}
-function requestMyLocation(){if(!navigator.geolocation)return locationError({message:'Geolocation supported nahi hai'});setLocationStatus('🟡 Current location le raha hoon...');navigator.geolocation.getCurrentPosition(saveLiveLocation,locationError,{enableHighAccuracy:true,maximumAge:0,timeout:20000})}
+function startLiveLocation(){if(!boy||currentDuty!=='ON'||activeDeliveryCount<=0)return;if(!navigator.geolocation){locationError({message:'Geolocation supported nahi hai'});return}if(locationWatchId!==null)navigator.geolocation.clearWatch(locationWatchId);setLocationStatus('🟡 Location permission maang raha hai...');locationWatchId=navigator.geolocation.watchPosition(saveLiveLocation,locationError,{enableHighAccuracy:true,maximumAge:5000,timeout:15000})}
+function requestMyLocation(){if(!boy||currentDuty!=='ON'||activeDeliveryCount<=0)return alert('Live location is available only while ON DUTY with an accepted delivery.');if(!navigator.geolocation)return locationError({message:'Geolocation supported nahi hai'});setLocationStatus('🟡 Current location le raha hoon...');navigator.geolocation.getCurrentPosition(saveLiveLocation,locationError,{enableHighAccuracy:true,maximumAge:0,timeout:20000})}
 async function loadDuty(){
  if(!boy)return;
  try{
@@ -57,6 +57,7 @@ async function loadDuty(){
   if(r.error)throw r.error;
   const d=Array.isArray(r.data)?r.data[0]:r.data;
   const duty=String(d?.duty_status||'OFF').toUpperCase();
+  currentDuty=duty;
   $('dutyStatus').innerHTML=duty==='ON'?'<b style="color:#166534">🟢 ON DUTY — You are available for work</b>':'<b style="color:#991b1b">🔴 OFF DUTY — You are not on duty</b>';
   $('onDutyBtn').disabled=duty==='ON'; $('offDutyBtn').disabled=duty==='OFF';
   return duty;
@@ -134,6 +135,12 @@ async function loadMine(){
   const r=await db.rpc('delivery_my_orders',{p_delivery_boy_id:boy.id});
   if(r.error)throw r.error;
   const rows=r.data||[];
+  const activeRows=rows.filter(o=>o.status!=='Delivered' && o.status!=='Cancelled');
+  activeDeliveryCount=activeRows.length;
+  if(activeDeliveryCount===0 && locationWatchId!==null && navigator.geolocation){
+    navigator.geolocation.clearWatch(locationWatchId);
+    locationWatchId=null;
+  }
   const safety=$('acceptedSafetyNotice');
   const hasActive=rows.some(o=>o.status!=='Delivered' && o.status!=='Cancelled');
   if(safety)safety.style.display=hasActive?'block':'none';
@@ -159,7 +166,7 @@ async function loadMine(){
  }catch(e){box.innerHTML='<div class="error">My Deliveries error: '+esc(e.message||e)+'</div>'}
 }
 async function refreshMyLiveLocationBoxes(){
- if(!boy||!navigator.geolocation)return;
+ if(!boy||currentDuty!=='ON'||activeDeliveryCount<=0||!navigator.geolocation)return;
  navigator.geolocation.getCurrentPosition(async p=>{
    await saveLiveLocation(p);
    const coords=`${Number(p.coords.latitude).toFixed(6)}, ${Number(p.coords.longitude).toFixed(6)}`;
@@ -188,7 +195,7 @@ async function showHistory(){
   const r=await db.rpc('delivery_earning_history',{p_delivery_boy_id:boy.id});
   if(r.error)throw r.error;
   const rows=r.data||[];
-  if(!rows.length){body.innerHTML='<div class="muted">No completed rides yet.</div>';return}
+  if(!rows.length){body.innerHTML='<div style="padding:12px;background:#fff8d6;border:1px solid #eadb78;border-radius:12px"><b>💰 Total Earnings: ₹0</b></div><div class="muted" style="margin-top:10px">No completed rides yet.</div>';return}
   const daily={}; let grand=0; rows.forEach(x=>{const dt=x.completed_at?new Date(x.completed_at):null; const day=dt?dt.toLocaleDateString('en-IN',{timeZone:'Asia/Kolkata'}):'Unknown date'; const amt=Number(x.amount||0); daily[day]=(daily[day]||0)+amt; grand+=amt;});
   const dailyHtml=Object.entries(daily).map(([day,total])=>`<div class="historyItem"><b>📅 ${esc(day)}</b><br>💰 Total earned that day: <b>${money(total)}</b></div>`).join('');
   const ridesHtml=rows.map(x=>`<div class="historyItem"><b>#${esc(x.order_id)}</b><br>📅 ${x.completed_at?new Date(x.completed_at).toLocaleString('en-IN',{timeZone:'Asia/Kolkata'}):'-'}<br>💰 Earning: <b>${money(x.amount)}</b></div>`).join('');
@@ -196,8 +203,8 @@ async function showHistory(){
  }catch(e){body.innerHTML='<div class="error">History error: '+esc(e.message||e)+'</div>'}
 }
 function closeHistory(){const m=$('historyModal');if(m)m.style.display='none'}
-async function loadAll(){await Promise.all([loadAvailable(),loadMine(),loadDuty(),loadTodaySummary()]);sendLocation()}
+async function loadAll(){await Promise.all([loadAvailable(),loadMine(),loadDuty(),loadTodaySummary()]);if(currentDuty==='ON'&&activeDeliveryCount>0)sendLocation()}
 function sendLocation(){if(boy&&navigator.geolocation)navigator.geolocation.getCurrentPosition(saveLiveLocation,()=>{},{enableHighAccuracy:true,maximumAge:5000,timeout:15000})}
 const saved=localStorage.getItem('delhi6_delivery_boy');if(saved){try{boy=JSON.parse(saved);if(boy?.id){showPanel();loadAll()}}catch(e){localStorage.removeItem('delhi6_delivery_boy')}}
-setInterval(()=>{if(boy){loadAvailable();loadMine();loadDuty();loadTodaySummary();if(document.getElementById('dutyStatus')?.textContent.includes('ON DUTY')){sendLocation();refreshMyLiveLocationBoxes()}}},5000);
+setInterval(()=>{if(boy){loadAvailable();loadMine();loadDuty();loadTodaySummary();if(currentDuty==='ON'&&activeDeliveryCount>0){sendLocation();refreshMyLiveLocationBoxes()}}},5000);
 </script></body></html>
