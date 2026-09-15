@@ -7,7 +7,7 @@
 <div class="card"><h2>📊 Today's Summary</h2><div class="grid"><div><b>Completed Rides</b><div id="todayRides" style="font-size:24px">0</div></div><div><b>Today's Earnings</b><div id="todayEarned" style="font-size:24px">₹0</div></div></div><div id="todaySummaryTime" class="muted" style="margin-top:8px"></div></div>
 <div class="card"><h2>📡 My Live Location</h2><div id="myLocationStatus" class="loc">📍 Location not started yet.</div><button onclick="requestMyLocation()">📍 Update My Location</button><a id="myLocationMap" href="#" target="_blank" class="map" style="display:none">🗺️ Open My Location</a><p class="muted">Location permission Allow rakho. Location Admin aur active customer ko latest position dikhayegi.</p></div>
 <div class="card"><h2>🔔 Delivery Requests</h2><p class="muted">Request me customer ki complete details aur location dikhengi.</p><div id="available">Loading...</div></div>
-<div class="card"><h2>🚚 My Deliveries</h2><div id="mine">Loading...</div></div></section></main>
+<div id="acceptedSafetyNotice" class="card" style="display:none;background:#fff3cd;border:3px solid #d97706"><div style="font-size:18px;line-height:1.5;font-weight:800">⚠️ <b>सावधान:</b> आपकी लाइव लोकेशन होटल के मालिक के पास जा रही है। कृपया सतर्क रहें और अपना ख्याल रखें।</div></div><div class="card"><h2>🚚 My Deliveries</h2><div id="mine">Loading...</div></div></section></main>
 <script>
 const SB_URL='https://qxktximeddpttcjkaumo.supabase.co';
 const SB_KEY='sb_publishable_mUL6OaOwJ649Xi68uQOcLw_9g0fM8mM';
@@ -101,10 +101,12 @@ async function loadMine(){
   const r=await db.rpc('delivery_my_orders',{p_delivery_boy_id:boy.id});
   if(r.error)throw r.error;
   const rows=r.data||[];
+  const activeRows=rows.filter(o=>o.status!=='Delivered'&&o.status!=='Cancelled');
+  const safety=$('acceptedSafetyNotice');if(safety)safety.style.display=activeRows.length?'block':'none';
   if(!rows.length){box.innerHTML='<div class="muted">Abhi koi accepted delivery nahi hai.</div>';return}
   box.innerHTML=rows.map(o=>{
     const map=mapFromAddress(o.address);
-    const active=o.status!=='Delivered';
+    const active=o.status!=='Delivered'&&o.status!=='Cancelled';
     const locId='myLiveLocation_'+String(o.order_id).replace(/[^a-zA-Z0-9_-]/g,'_');
     return `<div class="order">
       <div><b>Order #${esc(o.order_id)}</b> <span class="pill">${esc(o.status)}</span></div>
@@ -112,11 +114,10 @@ async function loadMine(){
       <div class="row">📞 <a href="tel:${esc(o.phone)}">${esc(o.phone)}</a></div>
       <div class="row">🏠 ${esc(o.address)}</div>
       ${map?`<a class="map" href="${map}" target="_blank">📍 Customer Location</a>`:''}
-      <div class="row" style="margin-top:8px"><b>📡 Your Live Location</b></div>
-      <div id="${locId}" class="small" style="padding:8px;background:#fff8d6;border-radius:8px">Getting current location...</div>
+      ${active?`<div class="row" style="margin-top:8px"><b>📡 Your Live Location</b></div><div id="${locId}" class="small" style="padding:8px;background:#fff8d6;border-radius:8px">Getting current location...</div>`:''}
       <div class="row">🧾 Order Total: <b>${money(o.total)}</b></div>
       <div class="row">💵 Delivery Payment: <b>${money(o.payment)}</b></div>
-      ${active?`<div style="margin-top:10px"><button onclick="updateStatus('${esc(o.order_id)}','Out for Delivery')">🚚 Out for Delivery</button> <button onclick="updateStatus('${esc(o.order_id)}','Delivered')">✅ Delivered</button></div>`:''}
+      ${active?`<div style="margin-top:10px"><button onclick="updateStatus('${esc(o.order_id)}','Out for Delivery')">🚚 Out for Delivery</button><div style="margin-top:10px;padding:10px;background:#fff8d6;border:1px solid #eadb78;border-radius:10px"><b>🔐 Customer OTP</b><div class="muted" style="font-size:12px;margin:4px 0">ग्राहक से OTP पूछें। सही OTP डालने पर ही ऑर्डर Delivered होगा।</div><div style="display:flex;gap:6px;flex-wrap:wrap"><input id="deliveryOtp_${esc(o.order_id)}" inputmode="numeric" maxlength="8" placeholder="OTP डालें" style="flex:1;min-width:130px;padding:10px;border:1px solid #ccc;border-radius:8px"><button onclick="verifyCustomerOtp('${esc(o.order_id)}')">🔐 OTP Verify & Delivered</button></div></div></div>`:''}
     </div>`
   }).join('');
   await refreshMyLiveLocationBoxes();
@@ -133,7 +134,8 @@ async function refreshMyLiveLocationBoxes(){
    });
  },()=>{});
 }
-async function updateStatus(id,status){try{const r=await db.rpc('delivery_update_status',{p_delivery_boy_id:boy.id,p_order_id:String(id),p_status:status});if(r.error)throw r.error;await loadMine();sendLocation()}catch(e){alert('Status error: '+(e.message||e))}}
+async function updateStatus(id,status){try{if(status==='Delivered')return alert('ग्राहक से OTP लेकर पहले Verify करें।');const r=await db.rpc('delivery_update_status',{p_delivery_boy_id:boy.id,p_order_id:String(id),p_status:status});if(r.error)throw r.error;await loadMine();sendLocation()}catch(e){alert('Status error: '+(e.message||e))}}
+async function verifyCustomerOtp(id){const input=document.getElementById('deliveryOtp_'+id);const otp=(input?.value||'').trim();if(!/^\d{4,8}$/.test(otp))return alert('कृपया 4 से 8 अंकों का ग्राहक OTP डालें।');try{const r=await db.rpc('delivery_verify_customer_otp',{p_delivery_boy_id:boy.id,p_order_id:String(id),p_otp:otp});if(r.error)throw r.error;alert('✅ OTP सही है। ऑर्डर Delivered हो गया।');await loadAll();sendLocation()}catch(e){alert('OTP verification failed: '+(e.message||e))}}
 async function toggleMenu(){const m=$('sideMenu');const o=$('menuOverlay');m.classList.toggle('open');o.classList.toggle('open')}
 function closeMenu(){$('sideMenu').classList.remove('open');$('menuOverlay').classList.remove('open')}
 async function showHistory(){
