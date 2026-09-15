@@ -1,0 +1,210 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Delhi 6 — Delivery Boy</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#fffaf0;color:#171717}.head{background:#f4c400;padding:16px 5%;font-size:21px;font-weight:900;display:flex;justify-content:space-between;align-items:center}.wrap{max-width:900px;margin:auto;padding:20px 5%}.card{background:#fff;border-radius:18px;padding:18px;margin-bottom:16px;box-shadow:0 4px 18px #0002}input{width:100%;padding:12px;margin:6px 0;border:1px solid #ccc;border-radius:9px;font:inherit}button{padding:11px 15px;border:0;border-radius:9px;background:#f4c400;font-weight:900;cursor:pointer}.dark{background:#171717;color:#fff}.danger{background:#b00020;color:#fff}.muted{color:#666;font-size:13px}.order{border:1px solid #ddd;border-radius:14px;padding:14px;margin:10px 0}.pill{display:inline-block;padding:5px 8px;border-radius:20px;background:#eee;font-size:12px;font-weight:800}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:650px){.grid{grid-template-columns:1fr}}.loc{background:#eaf6ff;padding:10px;border-radius:10px;margin:8px 0}.success{color:#087a2f;font-weight:800}.error{color:#b00020;font-weight:800}.login{max-width:450px;margin:60px auto}.map{display:inline-block;margin-top:7px;text-decoration:none;font-weight:800;color:#075ea8}.row{margin:7px 0}.menuBtn{background:#171717;color:#fff;font-size:22px;padding:8px 12px}.sideMenu{position:fixed;top:0;right:-320px;width:300px;max-width:85vw;height:100vh;background:#fff;z-index:9999;box-shadow:-8px 0 25px #0003;padding:20px;transition:right .25s;overflow:auto}.sideMenu.open{right:0}.menuOverlay{position:fixed;inset:0;background:#0007;z-index:9998;display:none}.menuOverlay.open{display:block}.historyItem{border:1px solid #ddd;border-radius:12px;padding:12px;margin:9px 0;background:#fff}.editAmount{width:130px;margin-right:6px}</style></head><body>
+<header class="head"><span>🚚 Delhi 6 — Delivery Boy</span><div style="display:flex;gap:6px;align-items:center"><button id="menuBtn" class="menuBtn" onclick="toggleMenu()" style="display:none">☰</button><button id="logout" class="dark" onclick="logout()" style="display:none">Logout</button></div></header><div id="menuOverlay" class="menuOverlay" onclick="closeMenu()"></div><aside id="sideMenu" class="sideMenu"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin-top:0">☰ Menu</h2><button class="dark" onclick="closeMenu()">✕</button></div><button style="width:100%;margin:6px 0" onclick="showHistory();closeMenu()">📊 Riding & Earning History</button></aside>
+<main class="wrap">
+<section id="login" class="card login"><h2>🚚 Delivery Boy Login</h2><p class="muted">Admin se mila Login ID aur PIN enter karo.</p><input id="loginId" placeholder="Login ID" autocomplete="username"><input id="pin" type="password" inputmode="numeric" maxlength="8" placeholder="4-8 digit PIN" autocomplete="current-password"><button id="loginBtn" style="width:100%;margin-top:8px">Login</button><p id="loginMsg" class="error"></p></section>
+<section id="panel" style="display:none"><div class="card"><div class="grid"><div><b id="boyName">Delivery Boy</b><div class="muted" id="boyPhone"></div></div><div><b>💰 Current Delivery Payment</b><div id="boyPay">₹0</div></div></div></div>
+<div class="card"><h2>🟢 Duty Status</h2><div id="dutyStatus" class="loc">Loading duty status...</div><div style="margin-top:8px"><button id="onDutyBtn" onclick="setDuty('ON')">🟢 ON DUTY</button><button id="offDutyBtn" class="dark" onclick="setDuty('OFF')" style="margin-left:6px">🔴 OFF DUTY</button></div><p class="muted">Select ON DUTY when you start work and OFF DUTY when you finish. Admin can see your current duty status.</p></div>
+<div class="card"><h2>📊 Today's Summary</h2><div class="grid"><div><b>Completed Rides</b><div id="todayRides" style="font-size:24px">0</div></div><div><b>Today's Earnings</b><div id="todayEarned" style="font-size:24px">₹0</div></div></div><div id="todaySummaryTime" class="muted" style="margin-top:8px"></div></div>
+<div class="card"><h2>📡 My Live Location</h2><div id="myLocationStatus" class="loc">📍 Location not started yet.</div><button onclick="requestMyLocation()">📍 Update My Location</button><a id="myLocationMap" href="#" target="_blank" class="map" style="display:none">🗺️ Open My Location</a><p class="muted">Location permission Allow rakho. Location Admin aur active customer ko latest position dikhayegi.</p></div>
+<div class="card"><h2>🔔 Delivery Requests</h2><p class="muted">Request me customer ki complete details aur location dikhengi.</p><div id="available">Loading...</div></div>
+<div id="acceptedSafetyNotice" class="card" style="display:none;background:#fff3cd;border:3px solid #d97706"><div class="liveSafetyNotice" style="font-size:18px;line-height:1.5;font-weight:800">⚠️ <b>सावधान:</b> आपकी live location होटल मालिक के पास जा रही है। कृपया सतर्क रहें और अपना ख्याल रखें।</div></div><div class="card"><h2>🚚 My Deliveries</h2><div id="mine">Loading...</div></div></section></main>
+<script>
+const SB_URL='https://qxktximeddpttcjkaumo.supabase.co';
+const SB_KEY='sb_publishable_mUL6OaOwJ649Xi68uQOcLw_9g0fM8mM';
+const db=window.supabase.createClient(SB_URL,SB_KEY);
+let boy=null,locationWatchId=null,activeDeliveryCount=0,currentDuty='OFF';
+const $=id=>document.getElementById(id);
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function money(n){return '₹'+Number(n||0).toLocaleString('en-IN')}
+function mapFromAddress(a){const m=String(a||'').match(/https?:\/\/www\.google\.com\/maps\?q=[^\s<]+/i);return m?m[0]:''}
+function setLocationStatus(t){$('myLocationStatus').innerHTML=t}
+function showPanel(){ $('login').style.display='none'; $('panel').style.display='block'; $('logout').style.display='block'; $('menuBtn').style.display='block'; $('boyName').textContent=boy.name||'Delivery Boy'; $('boyPhone').textContent=boy.phone||''; }
+async function login(){
+ const id=$('loginId').value.trim(),pin=$('pin').value.trim(),msg=$('loginMsg');
+ msg.textContent='';
+ if(!id){msg.textContent='Login ID bharo.';return}
+ if(!/^[0-9]{4,8}$/.test(pin)){msg.textContent='PIN 4-8 digit ka hona chahiye.';return}
+ msg.textContent='Logging in...';
+ try{
+   const r=await db.rpc('delivery_login',{p_login_id:id,p_pin:pin});
+   if(r.error)throw r.error;
+   const data=Array.isArray(r.data)?r.data[0]:r.data;
+   if(!data||data.success!==true){msg.textContent=data?.message||'Wrong Login ID/PIN ya account inactive hai.';return}
+   boy=data;localStorage.setItem('delhi6_delivery_boy',JSON.stringify(boy));
+   showPanel();loadAll();
+ }catch(e){msg.textContent='Login error: '+(e.message||String(e));}
+}
+$('loginBtn').addEventListener('click',login);$('pin').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+function logout(){if(locationWatchId!==null&&navigator.geolocation)navigator.geolocation.clearWatch(locationWatchId);localStorage.removeItem('delhi6_delivery_boy');location.reload()}
+async function saveLiveLocation(p){
+ if(!boy||currentDuty!=='ON'||activeDeliveryCount<=0)return;
+ try{
+   const r=await db.rpc('delivery_update_location',{p_delivery_boy_id:boy.id,p_lat:p.coords.latitude,p_lng:p.coords.longitude,p_accuracy:p.coords.accuracy||null});
+   if(r.error)throw r.error;
+   const lat=p.coords.latitude,lng=p.coords.longitude;
+   const url='https://www.google.com/maps?q='+lat+','+lng;
+   $('myLocationMap').href=url;$('myLocationMap').style.display='inline-block';
+   setLocationStatus('🟢 <b>Live location active</b><br>📍 '+lat.toFixed(6)+', '+lng.toFixed(6)+'<br><span class="muted">Updated '+new Date().toLocaleTimeString('en-IN')+'</span>');
+ }catch(e){setLocationStatus('🔴 Location save error: '+esc(e.message||e))}
+}
+function locationError(e){setLocationStatus('🔴 <b>Location permission/error:</b> '+esc(e.message||'Location unavailable')+'<br><span class="muted">Phone/browser me Location Allow karo.</span>')}
+function startLiveLocation(){if(!boy||currentDuty!=='ON'||activeDeliveryCount<=0)return;if(!navigator.geolocation){locationError({message:'Geolocation supported nahi hai'});return}if(locationWatchId!==null)navigator.geolocation.clearWatch(locationWatchId);setLocationStatus('🟡 Location permission maang raha hai...');locationWatchId=navigator.geolocation.watchPosition(saveLiveLocation,locationError,{enableHighAccuracy:true,maximumAge:5000,timeout:15000})}
+function requestMyLocation(){if(!boy||currentDuty!=='ON'||activeDeliveryCount<=0)return alert('Live location is available only while ON DUTY with an accepted delivery.');if(!navigator.geolocation)return locationError({message:'Geolocation supported nahi hai'});setLocationStatus('🟡 Current location le raha hoon...');navigator.geolocation.getCurrentPosition(saveLiveLocation,locationError,{enableHighAccuracy:true,maximumAge:0,timeout:20000})}
+async function loadDuty(){
+ if(!boy)return;
+ try{
+  const r=await db.rpc('delivery_get_duty',{p_delivery_boy_id:boy.id});
+  if(r.error)throw r.error;
+  const d=Array.isArray(r.data)?r.data[0]:r.data;
+  const duty=String(d?.duty_status||'OFF').toUpperCase();
+  currentDuty=duty;
+  $('dutyStatus').innerHTML=duty==='ON'?'<b style="color:#166534">🟢 ON DUTY — You are available for work</b>':'<b style="color:#991b1b">🔴 OFF DUTY — You are not on duty</b>';
+  $('onDutyBtn').disabled=duty==='ON'; $('offDutyBtn').disabled=duty==='OFF';
+  return duty;
+ }catch(e){$('dutyStatus').textContent='Duty status error: '+(e.message||e);return 'OFF'}
+}
+async function getCurrentPositionSafe(){
+ return new Promise(resolve=>{
+  if(!navigator.geolocation)return resolve(null);
+  navigator.geolocation.getCurrentPosition(p=>resolve(p),()=>resolve(null),{enableHighAccuracy:true,maximumAge:0,timeout:12000});
+ });
+}
+async function notifyOwnerOffDuty(activeRows,position){
+ if(!activeRows||!activeRows.length)return;
+ const lat=position?.coords?.latitude, lng=position?.coords?.longitude;
+ const locationText=lat!=null&&lng!=null?`Current location: https://www.google.com/maps?q=${lat},${lng}`:'Current location: unavailable';
+ const lines=['⚠️ DELHI 6 DELIVERY BOY OFF DUTY ALERT','',`Delivery Boy: ${boy?.name||'-'}`,`Phone: ${boy?.phone||'-'}`,`Time: ${new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})}`,locationText,'','Accepted deliveries not yet Delivered:'];
+ activeRows.forEach((o,i)=>{lines.push('',`${i+1}. Order #${o.order_id||'-'}`,`Customer: ${o.customer_name||'-'}`,`Customer Phone: ${o.phone||'-'}`,`Address: ${o.address||'-'}`,`Order Total: ${money(o.total||0)}`,`Delivery Payment: ${money(o.payment||0)}`,`Status: ${o.status||'-'}`);});
+ const url='https://wa.me/918750794831?text='+encodeURIComponent(lines.join('\n'));
+ try{window.open(url,'_blank','noopener');}catch(e){location.href=url;}
+}
+async function setDuty(value){
+ if(!boy)return;
+ const btn=value==='ON'?$('onDutyBtn'):$('offDutyBtn'); if(btn)btn.disabled=true;
+ try{
+  let activeRows=[]; let position=null;
+  if(value==='OFF'){
+   const mr=await db.rpc('delivery_my_orders',{p_delivery_boy_id:boy.id});
+   if(!mr.error)activeRows=(mr.data||[]).filter(o=>o.status!=='Delivered'&&o.status!=='Cancelled');
+   if(activeRows.length)position=await getCurrentPositionSafe();
+  }
+  const r=await db.rpc('delivery_set_duty',{p_delivery_boy_id:boy.id,p_duty_status:value});
+  if(r.error)throw r.error;
+  await loadDuty();
+  if(value==='ON'){
+   startLiveLocation(); sendLocation();
+  }else{
+   if(locationWatchId!==null&&navigator.geolocation)navigator.geolocation.clearWatch(locationWatchId);
+   locationWatchId=null;
+   setLocationStatus('🔴 <b>Live location stopped because you are OFF DUTY.</b>');
+   if(activeRows.length){
+    await notifyOwnerOffDuty(activeRows,position);
+    alert('⚠️ You went OFF DUTY with an active accepted delivery. Owner WhatsApp alert has been prepared with order details and your current location.');
+   }
+  }
+  await loadAll();
+ }catch(e){alert('Duty status error: '+(e.message||e));await loadDuty()}
+}
+
+async function loadTodaySummary(){
+ if(!boy)return;
+ try{
+  const r=await db.rpc('delivery_today_summary',{p_delivery_boy_id:boy.id});
+  if(r.error)throw r.error;
+  const d=Array.isArray(r.data)?r.data[0]:r.data;
+  $('todayRides').textContent=String(d?.completed_rides||0);
+  $('todayEarned').textContent=money(d?.total_earned||0);
+  $('todaySummaryTime').textContent='Today: '+new Date().toLocaleDateString('en-IN',{timeZone:'Asia/Kolkata'});
+ }catch(e){$('todayRides').textContent='0';$('todayEarned').textContent='₹0';$('todaySummaryTime').textContent='Summary temporarily unavailable';}
+}
+async function loadAvailable(){
+ const box=$('available');if(!boy)return;try{const r=await db.rpc('delivery_available_orders',{p_delivery_boy_id:boy.id});if(r.error)throw r.error;const rows=r.data||[];if(!rows.length){box.innerHTML='<div class="muted">Abhi koi new delivery request nahi hai.</div>';return}
+ box.innerHTML=rows.map(o=>`<div class="order"><div><b>Order #${esc(o.order_id)}</b> <span class="pill">New Request</span></div>
+<div class="row">🧾 Order Total: <b>${money(o.total)}</b></div>
+<div class="row">💵 Delivery Payment: <b>${money(o.payment)}</b></div>
+<div class="row muted">🕒 Request: ${o.created_at?new Date(o.created_at).toLocaleString('en-IN'):''}</div>
+<div class="loc" style="margin:10px 0">🔒 Customer name, phone, address aur location <b>Accept karne ke baad</b> dikhegi.</div>
+<button ${currentDuty==='ON'?'':'disabled'} onclick="acceptOrder('${esc(o.order_id)}')">${currentDuty==='ON'?'✅ Accept Delivery':'🔴 ON DUTY required to accept'}</button><button class="danger" style="margin-left:6px" onclick="removeRequest('${esc(o.order_id)}')">🗑️ Remove Request</button></div>`).join('');
+ }catch(e){box.innerHTML='<div class="error">Requests error: '+esc(e.message||e)+'</div>'}
+}
+async function acceptOrder(id){if(!confirm('Ye delivery accept karni hai?'))return;try{const duty=await loadDuty();if(duty!=='ON'){return alert('🔴 OFF DUTY par delivery request accept nahi kar sakte. Pehle ON DUTY karein.')}const r=await db.rpc('delivery_accept_order',{p_delivery_boy_id:boy.id,p_order_id:String(id)});if(r.error)throw r.error;alert('Delivery accepted successfully.\n\n⚠️ सावधान: आपकी live location होटल मालिक के पास जा रही है। कृपया सतर्क रहें और अपना ख्याल रखें।');await loadAll();sendLocation()}catch(e){alert('Accept error: '+(e.message||e))}}
+async function removeRequest(id){if(!confirm('Is delivery request ko remove karna hai?'))return;try{const r=await db.rpc('delivery_remove_request',{p_delivery_boy_id:boy.id,p_order_id:String(id)});if(r.error)throw r.error;await loadAvailable()}catch(e){alert('Remove error: '+(e.message||e))}}
+async function loadMine(){
+ const box=$('mine');if(!boy)return;
+ try{
+  const r=await db.rpc('delivery_my_orders',{p_delivery_boy_id:boy.id});
+  if(r.error)throw r.error;
+  const rows=r.data||[];
+  const activeRows=rows.filter(o=>o.status!=='Delivered' && o.status!=='Cancelled');
+  activeDeliveryCount=activeRows.length;
+  if(activeDeliveryCount===0 && locationWatchId!==null && navigator.geolocation){
+    navigator.geolocation.clearWatch(locationWatchId);
+    locationWatchId=null;
+  }
+  const safety=$('acceptedSafetyNotice');
+  const hasActive=rows.some(o=>o.status!=='Delivered' && o.status!=='Cancelled');
+  if(safety)safety.style.display=hasActive?'block':'none';
+  if(!rows.length){box.innerHTML='<div class="muted">Abhi koi accepted delivery nahi hai.</div>';return}
+  box.innerHTML=rows.map(o=>{
+    const map=mapFromAddress(o.address);
+    const active=o.status!=='Delivered' && o.status!=='Cancelled';
+    const locId='myLiveLocation_'+String(o.order_id).replace(/[^a-zA-Z0-9_-]/g,'_');
+    return `<div class="order">
+      <div><b>Order #${esc(o.order_id)}</b> <span class="pill">${esc(o.status)}</span></div>
+      <div class="row">👤 <b>${esc(o.customer_name)}</b></div>
+      <div class="row">📞 <a href="tel:${esc(o.phone)}">${esc(o.phone)}</a></div>
+      <div class="row">🏠 ${esc(o.address)}</div>
+      ${map?`<a class="map" href="${map}" target="_blank">📍 Customer Location</a>`:''}
+      ${active?`<div class="row" style="margin-top:8px"><b>📡 Your Live Location</b></div>
+      <div id="${locId}" class="small" style="padding:8px;background:#fff8d6;border-radius:8px">Getting current location...</div>`:''}
+      <div class="row">🧾 Order Total: <b>${money(o.total)}</b></div>
+      <div class="row">💵 Delivery Payment: <b>${money(o.payment)}</b></div>
+      ${active?`<div style="margin-top:10px"><button onclick="updateStatus('${esc(o.order_id)}','Out for Delivery')">🚚 Out for Delivery</button> <div style="margin-top:10px;padding:10px;background:#fff8d6;border:1px solid #eadb78;border-radius:10px"><b>🔐 Customer OTP</b><div class="muted" style="font-size:12px;margin:4px 0">Customer se OTP pucho. OTP sahi hone par hi order Delivered hoga.</div><div style="display:flex;gap:6px;flex-wrap:wrap"><input id="deliveryOtp_${esc(o.order_id)}" inputmode="numeric" maxlength="8" placeholder="Enter OTP" style="flex:1;min-width:130px;padding:10px;border:1px solid #ccc;border-radius:8px"><button onclick="verifyCustomerOtp('${esc(o.order_id)}')">🔐 Verify OTP & Delivered</button></div></div></div>`:''}
+    </div>`
+  }).join('');
+  await refreshMyLiveLocationBoxes();
+ }catch(e){box.innerHTML='<div class="error">My Deliveries error: '+esc(e.message||e)+'</div>'}
+}
+async function refreshMyLiveLocationBoxes(){
+ if(!boy||currentDuty!=='ON'||activeDeliveryCount<=0||!navigator.geolocation)return;
+ navigator.geolocation.getCurrentPosition(async p=>{
+   await saveLiveLocation(p);
+   const coords=`${Number(p.coords.latitude).toFixed(6)}, ${Number(p.coords.longitude).toFixed(6)}`;
+   document.querySelectorAll('[id^="myLiveLocation_"]').forEach(el=>{
+     const map=`https://www.google.com/maps?q=${Number(p.coords.latitude).toFixed(6)},${Number(p.coords.longitude).toFixed(6)}`;
+     el.innerHTML=`📍 ${coords}<br><a class="map" href="${map}" target="_blank">Open your current location</a><br><span class="muted">Updated: ${new Date().toLocaleTimeString('en-IN')}</span>`;
+   });
+ },()=>{});
+}
+async function updateStatus(id,status){try{if(status==='Delivered')return alert('Customer OTP verify karo.');const r=await db.rpc('delivery_update_status',{p_delivery_boy_id:boy.id,p_order_id:String(id),p_status:status});if(r.error)throw r.error;await loadMine();sendLocation()}catch(e){alert('Status error: '+(e.message||e))}}
+async function verifyCustomerOtp(id){const input=document.getElementById('deliveryOtp_'+id);const otp=(input?.value||'').trim();if(!otp)return alert('Customer se OTP lekar enter karo.');try{const r=await db.rpc('delivery_verify_customer_otp',{p_delivery_boy_id:boy.id,p_order_id:String(id),p_otp:otp});if(r.error)throw r.error;alert('✅ OTP correct. Order Delivered.');await loadAll();sendLocation()}catch(e){alert('OTP verification failed: '+(e.message||e))}}
+async function toggleMenu(){const m=$('sideMenu');const o=$('menuOverlay');m.classList.toggle('open');o.classList.toggle('open')}
+function closeMenu(){$('sideMenu').classList.remove('open');$('menuOverlay').classList.remove('open')}
+async function showHistory(){
+ if(!boy)return;
+ let modal=document.getElementById('historyModal');
+ if(!modal){
+  modal=document.createElement('div');modal.id='historyModal';
+  modal.style='position:fixed;inset:0;background:#0008;z-index:10000;display:flex;align-items:center;justify-content:center;padding:18px';
+  modal.innerHTML='<div style="background:#fff;width:100%;max-width:650px;max-height:90vh;overflow:auto;border-radius:18px;padding:18px"><div style="display:flex;justify-content:space-between;align-items:center"><h2>📊 Riding & Earning History</h2><button class="dark" onclick="closeHistory()">✕</button></div><div id="historyBody">Loading...</div></div>';
+  document.body.appendChild(modal);
+ }
+ modal.style.display='flex';
+ const body=$('historyBody');body.textContent='Loading history...';
+ try{
+  const r=await db.rpc('delivery_earning_history',{p_delivery_boy_id:boy.id});
+  if(r.error)throw r.error;
+  const rows=r.data||[];
+  if(!rows.length){body.innerHTML='<div style="padding:12px;background:#fff8d6;border:1px solid #eadb78;border-radius:12px"><b>💰 Total Earnings: ₹0</b></div><div class="muted" style="margin-top:10px">No completed rides yet.</div>';return}
+  const daily={}; let grand=0; rows.forEach(x=>{const dt=x.completed_at?new Date(x.completed_at):null; const day=dt?dt.toLocaleDateString('en-IN',{timeZone:'Asia/Kolkata'}):'Unknown date'; const amt=Number(x.amount||0); daily[day]=(daily[day]||0)+amt; grand+=amt;});
+  const dailyHtml=Object.entries(daily).map(([day,total])=>`<div class="historyItem"><b>📅 ${esc(day)}</b><br>💰 Total earned that day: <b>${money(total)}</b></div>`).join('');
+  const ridesHtml=rows.map(x=>`<div class="historyItem"><b>#${esc(x.order_id)}</b><br>📅 ${x.completed_at?new Date(x.completed_at).toLocaleString('en-IN',{timeZone:'Asia/Kolkata'}):'-'}<br>💰 Earning: <b>${money(x.amount)}</b></div>`).join('');
+  body.innerHTML=`<div style="padding:12px;background:#fff8d6;border:1px solid #eadb78;border-radius:12px;margin-bottom:12px"><b>💰 Total Earnings: ${money(grand)}</b></div><h3>Daily Total</h3>${dailyHtml}<h3 style="margin-top:16px">Completed Rides</h3>${ridesHtml}`;
+ }catch(e){body.innerHTML='<div class="error">History error: '+esc(e.message||e)+'</div>'}
+}
+function closeHistory(){const m=$('historyModal');if(m)m.style.display='none'}
+async function loadAll(){await Promise.all([loadAvailable(),loadMine(),loadDuty(),loadTodaySummary()]);if(currentDuty==='ON'&&activeDeliveryCount>0)sendLocation()}
+function sendLocation(){if(boy&&navigator.geolocation)navigator.geolocation.getCurrentPosition(saveLiveLocation,()=>{},{enableHighAccuracy:true,maximumAge:5000,timeout:15000})}
+const saved=localStorage.getItem('delhi6_delivery_boy');if(saved){try{boy=JSON.parse(saved);if(boy?.id){showPanel();loadAll()}}catch(e){localStorage.removeItem('delhi6_delivery_boy')}}
+setInterval(()=>{if(boy){loadAvailable();loadMine();loadDuty();loadTodaySummary();if(currentDuty==='ON'&&activeDeliveryCount>0){sendLocation();refreshMyLiveLocationBoxes()}}},5000);
+</script></body></html>
