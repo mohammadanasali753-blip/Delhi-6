@@ -100,12 +100,12 @@ body.banned > .banScreen{display:flex!important}
     <div class="chatPopupForm"><textarea id="chatPopupInput" maxlength="2000" placeholder="Write your message..."></textarea><button type="button" onclick="sendPopupMessage()">Send</button></div>
   </div>
 </div>
-<div id="modal" class="modal"><div class="box"><button class="close" onclick="closeCart()">×</button><h2>🛒 Your Order</h2><div id="items"></div><hr><div id="total" style="font-size:20px;font-weight:900">Total: ₹0</div><h3>Delivery Details</h3><input id="name" required placeholder="Your Name"><input id="phone" required type="tel" placeholder="Mobile Number"><textarea id="address" required placeholder="Full Delivery Address"></textarea><button type="button" class="waOrderBtn" onclick="getCustomerCurrentLocation()" style="margin:6px 0 10px;width:100%">📍 Use My Current Location</button><div id="locationStatus" class="muted" style="font-size:12px;margin:-4px 0 8px">Current location optional — tap the button to share your live delivery location.</div><textarea id="note" placeholder="Delivery instructions (optional)"></textarea><select id="payment" onchange="updatePaymentUI()"><option value="Cash on Delivery">Cash on Delivery</option><option value="UPI">💳 Razorpay Online Payment</option><option value="Wallet">💰 Pay from My Wallet</option></select><div id="walletPayBox" class="upiBox"><b>💰 Pay from My Wallet</b><div id="walletPayAmount" style="margin-top:5px;font-weight:900"></div><div style="margin-top:5px">Wallet balance: <b>₹<span id="checkoutWalletBalance">0.00</span></b></div><div id="walletPayMsg" class="muted" style="font-size:12px;margin-top:7px">Your wallet balance will be checked when you place the order.</div></div><div id="upiBox" class="upiBox"><b>💳 Online UPI Payment</b><div id="upiAmount" style="margin-top:5px;font-weight:900"></div><img id="upiQr" class="upiQr" style="display:none" alt="Delhi 6 UPI QR"><div id="upiPay" class="payUpi" style="text-align:center">🔒 Secure payment via Razorpay — payment opens after Place Order</div><div class="muted" style="font-size:12px;margin-top:7px">Verify the amount in your UPI app and enter your UPI PIN to pay.</div></div><button class="order" onclick="placeOrder()">📲 Place Order</button><div id="success" class="success"></div></div></div>
+<div id="modal" class="modal"><div class="box"><button class="close" onclick="closeCart()">×</button><h2>🛒 Your Order</h2><div id="items"></div><hr><div id="total" style="font-size:20px;font-weight:900">Total: ₹0</div><h3>Delivery Details</h3><input id="name" required placeholder="Your Name"><input id="phone" required type="tel" placeholder="Mobile Number"><textarea id="address" required placeholder="Full Delivery Address"></textarea><button type="button" class="waOrderBtn" onclick="getCustomerCurrentLocation()" style="margin:6px 0 10px;width:100%">📍 Use My Current Location</button><div id="locationStatus" class="muted" style="font-size:12px;margin:-4px 0 8px">Current location optional — tap the button to share your live delivery location.</div><textarea id="note" placeholder="Delivery instructions (optional)"></textarea><select id="payment" onchange="updatePaymentUI()"><option value="UPI">💳 Razorpay Online Payment</option></select><div id="upiBox" class="upiBox"><b>💳 Online UPI Payment</b><div id="upiAmount" style="margin-top:5px;font-weight:900"></div><img id="upiQr" class="upiQr" style="display:none" alt="Delhi 6 UPI QR"><div id="upiPay" class="payUpi" style="text-align:center">🔒 Secure payment via Razorpay — payment opens after Place Order</div><div class="muted" style="font-size:12px;margin-top:7px">Verify the amount in your UPI app and enter your UPI PIN to pay.</div></div><button class="order" onclick="placeOrder()">📲 Place Order</button><div id="success" class="success"></div></div></div>
 <script>
 const SB_URL="https://qxktximeddpttcjkaumo.supabase.co";
 const SB_KEY="sb_publishable_mUL6OaOwJ649Xi68uQOcLw_9g0fM8mM";
 let hotelSlideTimer=null,hotelSlideIndex=0;
-const db=supabase.createClient(SB_URL,SB_KEY);let menu=[],cart=[],deliveryCharge=0,settings={upiId:"8750794831@ptsbi",upiQrUrl:"",hotelImageUrl:"",hotelImages:[],clockMode:"realtime",clockManualTime:"",allowedPaymentMethods:["Cash on Delivery","UPI"]};let customerAllowedPayments=["Cash on Delivery","UPI"];let customerBanStart=null,customerBanEnd=null,customerBanScreen=false;
+const db=supabase.createClient(SB_URL,SB_KEY);let menu=[],cart=[],deliveryCharge=0,settings={upiId:"8750794831@ptsbi",upiQrUrl:"",hotelImageUrl:"",hotelImages:[],clockMode:"realtime",clockManualTime:"",allowedPaymentMethods:["UPI"]};let customerAllowedPayments=["UPI"];let customerBanStart=null,customerBanEnd=null,customerBanScreen=false;
 const fallback=[{name:"Chicken Biryani",price:180,description:"Aromatic chicken biryani",image_url:""},{name:"Mutton Biryani",price:260,description:"Rich mutton biryani",image_url:""},{name:"Egg Biryani",price:130,description:"Tasty egg biryani",image_url:""},{name:"Veg Biryani",price:120,description:"Fragrant veg biryani",image_url:""}];
 function esc(v){return String(v??"").replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))}
 function money(n){return "₹"+Number(n||0).toLocaleString("en-IN")}
@@ -133,7 +133,7 @@ function showAuth(user){
   if(!user){if(box)box.style.display="none";if(msgs)msgs.style.display="none";if(tracker)tracker.style.display="none";}
   const out=document.getElementById("authLoggedOut"),inn=document.getElementById("authLoggedIn"),txt=document.getElementById("authUserText");
   if(user){out.style.display="none";inn.style.display="block";txt.textContent="Logged in: "+(user.email||"Google account");if(user.email)document.getElementById("authEmail").value=user.email;loadMyOrders();loadGeneralMessages();showTracker();refreshCustomerRules();}
-  else{out.style.display="flex";inn.style.display="none";customerAllowedPayments=["Cash on Delivery","UPI"];updatePaymentOptions();}
+  else{out.style.display="flex";inn.style.display="none";customerAllowedPayments=["UPI"];updatePaymentOptions();}
 }
 function showCustomerBanScreen(row){
   customerBanScreen=true;
@@ -156,18 +156,18 @@ db.auth.onAuthStateChange((event,session)=>{showAuth(session?.user||null);if(ses
 async function initCustomerAuth(){const {data}=await db.auth.getSession();const user=data.session?.user||null;if(user){const ok=await refreshCustomerRules();if(ok===false){showAuth(null);return}}showAuth(user)}
 function finalTotal(){return cart.reduce((s,x)=>s+x.price*x.qty,0)+Number(deliveryCharge||0)}
 function upiLink(amount){return "upi://pay?pa="+encodeURIComponent(settings.upiId)+"&pn="+encodeURIComponent("Delhi 6 Hotel")+"&am="+encodeURIComponent(Number(amount).toFixed(2))+"&cu=INR&tr="+encodeURIComponent("DELHI6"+Date.now())}
-async function updatePaymentUI(){const mode=document.getElementById("payment")?.value,is=mode==="UPI",isWallet=mode==="Wallet",box=document.getElementById("upiBox"),wbox=document.getElementById("walletPayBox");if(!box||!wbox)return;box.style.display=is?"block":"none";wbox.style.display=isWallet?"block":"none";const t=finalTotal();if(is){const amt=document.getElementById("upiAmount"),qr=document.getElementById("upiQr");amt.textContent="Payable amount: "+money(t);if(qr){qr.style.display="none"} }if(isWallet){document.getElementById("walletPayAmount").textContent="Order amount: "+money(t);await loadCheckoutWalletBalance(t)}}
+async function updatePaymentUI(){const mode=document.getElementById("payment")?.value,box=document.getElementById("upiBox");if(!box)return;box.style.display=mode==="UPI"?"block":"none";const t=finalTotal();if(mode==="UPI"){const amt=document.getElementById("upiAmount");if(amt)amt.textContent="Payable amount: "+money(t)}}
 function renderSiteOpenStatus(isOpen){const e=document.getElementById("siteOpenStatus");if(!e)return;e.style.display="block";e.textContent=isOpen?"OPEN":"CLOSED";e.style.background=isOpen?"#dcfce7":"#fee2e2";e.style.color=isOpen?"#15803d":"#dc2626";e.style.border="3px solid "+(isOpen?"#16a34a":"#dc2626");}
 function renderCustomerClock(){const box=document.getElementById("customerClock"),el=document.getElementById("customerClockTime");if(!box||!el)return;box.classList.add("show");const tick=()=>{let text="";if(settings.clockMode==="manual"&&/^\d{2}:\d{2}$/.test(settings.clockManualTime||"")){text=settings.clockManualTime}else{text=new Intl.DateTimeFormat("en-IN",{timeZone:"Asia/Kolkata",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:true}).format(new Date())}el.textContent=text};tick();if(window.customerClockTimer)clearInterval(window.customerClockTimer);window.customerClockTimer=setInterval(tick,1000)}
 function updatePaymentOptions(){const sel=document.getElementById("payment");if(!sel)return;[...sel.options].forEach(o=>{o.hidden=!customerAllowedPayments.includes(o.value);o.disabled=o.hidden});if(!customerAllowedPayments.includes(sel.value)){const first=[...sel.options].find(o=>!o.hidden);if(first)sel.value=first.value}updatePaymentUI()}
 async function refreshCustomerRules(){
   const {data:sessionData}=await db.auth.getSession();
   const user=sessionData?.session?.user;
-  if(!user){if(!customerBanScreen){customerAllowedPayments=["Cash on Delivery","UPI"]}return}
+  if(!user){if(!customerBanScreen){customerAllowedPayments=["UPI"]}return}
   const r=await db.rpc("get_my_account_status");
   if(r.error)return;
   const row=Array.isArray(r.data)?r.data[0]:r.data;
-  customerAllowedPayments=Array.isArray(row?.allowed_payment_methods)&&row.allowed_payment_methods.length?row.allowed_payment_methods:["Cash on Delivery","UPI","Wallet"];
+  customerAllowedPayments=["UPI"];
   customerBanStart=row?.ban_start||null;customerBanEnd=row?.ban_end||null;
   if(row?.blocked){
     showCustomerBanScreen(row);
@@ -378,7 +378,6 @@ async function placeOrder(){
   if(!n||!p||!a)return alert("Please fill Name, Mobile Number and Full Address.");
   const {data:sessionData}=await db.auth.getSession();
   if(!sessionData?.session?.user){openCart();closeSideMenu();openAccountPanel();return alert("Please log in before placing an order.");}
-  if(pay==="Wallet" && !sessionData?.session?.user){openCart();closeSideMenu();openAccountPanel();return alert("Please log in to pay from your wallet.")}
 
   let subtotal=cart.reduce((s,x)=>s+x.price*x.qty,0), total=subtotal+Number(deliveryCharge||0);
   let payload={cart:cart,delivery_instructions:note,payment_method:pay,delivery_charge:Number(deliveryCharge||0),upi_id:settings.upiId};
