@@ -75,7 +75,7 @@ body.banned > .banScreen{display:flex!important}
     <div class="muted">Available wallet balance</div>
     <input id="walletAmount" class="walletInput" type="number" min="1" step="1" placeholder="Top-up amount ₹">
     <a id="walletPay" class="walletPay" href="#">📲 Add Money via UPI</a>
-    <div class="walletNote">Wallet top-ups are credited after the hotel verifies the UPI payment.</div>
+    <div class="walletNote">Wallet top-ups are added automatically after successful Razorpay payment verification.</div>
   </div>
   <div id="drawerHint" class="muted" style="margin-top:14px;font-size:13px">My Orders, tracking, wallet and messages are available after login.</div>
 </aside><div class="authbar loginGateAccount"><div class="authbox loginGateBox"><button class="close" onclick="closeAccountPanel()" style="float:right">×</button><b class="loginGateTitle">👤 Login to Delhi 6 Hotel</b><span class="loginGateSub">Continue with Google to view the menu and place your order.</span><div id="authLoggedOut" class="authrow" style="margin-top:14px"><button type="button" class="btn google" style="width:100%;min-height:50px;font-size:16px" onclick="googleLogin()"><b class="gIcon">G</b> Continue with Google</button></div><div id="authLoggedIn" style="display:none;margin-top:9px"><span id="authUserText"></span> <button class="btn" onclick="openPrivate('orders')">📦 My Orders</button> <button class="btn" onclick="logoutCustomer()">Logout</button></div><div id="authMsg" class="muted authMsg" style="margin-top:10px"></div></div></div><div id="banScreen" class="authbar banScreen"><div class="banCard"><h2>⛔ Your Profile Is Temporarily Banned</h2><div id="banMessage">Your profile is blocked by the hotel.</div><div class="banTime">From: <span id="banFromText">--</span><br>Until: <span id="banUntilText">--</span></div><div class="owner">Please contact the owner for help.</div><a class="banWa" href="https://wa.me/918750794831" target="_blank">💬 WhatsApp Owner</a><a class="banCall" href="tel:+918750794831">📞 Call Owner</a><div style="margin-top:12px;font-size:13px;color:#666">Owner: +91 8750794831</div></div></div>
@@ -116,7 +116,53 @@ function goHome(){closeSideMenu();window.scrollTo({top:0,behavior:"smooth"})}
 function openAccountPanel(){closeSideMenu();const a=document.querySelector(".authbar");if(!a)return;a.classList.add("drawerAccount");a.style.display="block";setTimeout(()=>{if(!document.getElementById("authLoggedIn")||document.getElementById("authLoggedIn").style.display!=="block")document.getElementById("authEmail")?.focus()},50)}
 function closeAccountPanel(){const a=document.querySelector(".loginGateAccount");if(!a)return;if(document.body.classList.contains("loginGateMode")){a.classList.remove("drawerAccount");a.style.display="flex";return}a.classList.remove("drawerAccount");a.style.display="none"}
 async function openPrivate(kind){const {data}=await db.auth.getSession();if(!data?.session?.user){closeSideMenu();openAccountPanel();setAuthMsg("🔐 Please log in to access this section.");return}closeSideMenu();if(kind==="orders"){loadMyOrders();document.getElementById("myOrders")?.scrollIntoView({behavior:"smooth",block:"center"})}if(kind==="tracking"){document.getElementById("tracker").style.display="block";showTracker();document.getElementById("tracker").scrollIntoView({behavior:"smooth",block:"center"})}if(kind==="wallet"){openWallet();document.getElementById("walletPanel")?.scrollIntoView({behavior:"smooth",block:"center"})}if(kind==="messages"){loadGeneralMessages();document.getElementById("myMessages").style.display="block";document.getElementById("myMessages")?.scrollIntoView({behavior:"smooth",block:"center"})}}
-function openWallet(){const panel=document.getElementById("walletPanel");panel.style.display="block";const input=document.getElementById("walletAmount");input.oninput=()=>{};document.getElementById("walletPay").onclick=async(e)=>{e.preventDefault();const amount=Number(input.value||0);if(amount<=0)return alert("Enter a valid top-up amount.");const {error}=await db.rpc("create_wallet_topup",{p_amount:amount,p_reference:"DELHI6-WALLET-"+Date.now()});if(error)return alert(error.message);window.location.href=upiLink(amount)+"&tn="+encodeURIComponent("Delhi 6 Wallet Topup")};loadWalletBalance()}
+function openWallet(){
+  const panel=document.getElementById("walletPanel");
+  panel.style.display="block";
+  const input=document.getElementById("walletAmount");
+  const btn=document.getElementById("walletPay");
+  btn.onclick=async(e)=>{
+    e.preventDefault();
+    const amount=Number(input.value||0);
+    if(amount<=0||amount>100000)return alert("Enter a valid top-up amount (₹1 to ₹1,00,000).");
+    try{
+      btn.textContent="⏳ Opening Razorpay..."; btn.style.pointerEvents="none";
+      const {data:sd}=await db.auth.getSession();
+      if(!sd?.session?.user)throw new Error("Please log in before adding wallet money.");
+      const reference="DELHI6-WALLET-"+Date.now();
+      const {data:topupId,error:topupError}=await db.rpc("create_wallet_topup",{p_amount:amount,p_reference:reference});
+      if(topupError)throw topupError;
+      const rp=await callDelhi6Function("create-wallet-razorpay-order",{topup_id:String(topupId),amount:Number(amount)},true);
+      if(typeof Razorpay==="undefined")throw new Error("Razorpay is still loading. Please try again.");
+      const email=sd.session.user.email||"";
+      await new Promise((resolve,reject)=>{
+        let done=false;
+        const checkout=new Razorpay({
+          key:rp.key_id,amount:Number(rp.amount),currency:rp.currency||"INR",name:"Delhi 6 Hotel",
+          description:"Delhi 6 Wallet Top-up",order_id:rp.order_id,
+          prefill:{email},notes:{wallet_topup_id:String(topupId)},theme:{color:"#f4c400"},
+          handler:async(response)=>{
+            if(done)return; done=true;
+            try{
+              const verified=await callDelhi6Function("verify-wallet-razorpay-payment",{
+                topup_id:String(topupId),razorpay_order_id:String(response.razorpay_order_id||""),
+                razorpay_payment_id:String(response.razorpay_payment_id||""),razorpay_signature:String(response.razorpay_signature||"")
+              },true);
+              if(!verified?.success)throw new Error(verified?.error||"Wallet payment verification failed.");
+              input.value=""; await loadWalletBalance();
+              alert("✅ Payment successful! ₹"+Number(amount).toLocaleString("en-IN")+" wallet me add ho gaya."); resolve();
+            }catch(err){reject(err)}
+          },
+          modal:{ondismiss:()=>{if(!done){done=true;reject(new Error("Payment cancelled. Wallet was not credited."));}}}
+        });
+        checkout.on("payment.failed",r=>{if(!done){done=true;reject(new Error(r?.error?.description||"Payment failed"))}});
+        checkout.open();
+      });
+    }catch(err){alert(err?.message||"Wallet payment could not be completed.");}
+    finally{btn.textContent="💳 Add Money via Razorpay";btn.style.pointerEvents="auto";}
+  };
+  loadWalletBalance();
+}
 async function loadWalletBalance(){const el=document.getElementById("walletBalance");try{const {data,error}=await db.rpc("get_wallet_balance");if(error)throw error;el.textContent=Number(data||0).toFixed(2)}catch(e){el.textContent="0.00"}}
 async function loadCheckoutWalletBalance(total){const el=document.getElementById("checkoutWalletBalance"),msg=document.getElementById("walletPayMsg");if(!el)return;try{const {data,error}=await db.rpc("get_wallet_balance");if(error)throw error;const bal=Number(data||0);el.textContent=bal.toFixed(2);if(msg){msg.textContent=bal>=Number(total||0)?"Enough balance. Your wallet will be debited after you place the order.":"Insufficient wallet balance. Please add money to your wallet or choose another payment method.";msg.style.color=bal>=Number(total||0)?"#176b2c":"#b00020"}}catch(e){el.textContent="0.00";if(msg){msg.textContent="Wallet balance is unavailable right now. Please choose another payment method.";msg.style.color="#b00020"}}}
 
