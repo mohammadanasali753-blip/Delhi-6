@@ -52,7 +52,8 @@ public class MainActivity extends Activity {
             p.setTypeface(Typeface.create("sans",Typeface.BOLD));
             Arrays.stream(tok).forEach(a->Arrays.fill(a,-1));
             buildPath();
-            setFocusable(true);\n            setClickable(true);
+            setFocusable(true);
+            setClickable(true);
         }
         void buildPath(){
             // clockwise 52-cell ring around the 15x15 board
@@ -118,7 +119,9 @@ public class MainActivity extends Activity {
         void header(Canvas c,String title,String sub){
             text(c,"‹",18,46,40,Color.WHITE);
             text(c,title,59,36,21,Color.WHITE);
-            text(c,sub,59,57,10,0xffa29baa);\n            round(c,getWidth()-112,17,getWidth()-18,47,15,0xff17131f);\n            center(c,"P"+(turn+1)+" ACTIVE",getWidth()-65,37,9,col[Math.min(turn,3)]);
+            text(c,sub,59,57,10,0xffa29baa);
+            round(c,getWidth()-112,17,getWidth()-18,47,15,0xff17131f);
+            center(c,"P"+(turn+1)+" ACTIVE",getWidth()-65,37,9,col[Math.min(turn,3)]);
         }
         void playerSelect(Canvas c){
             header(c,"LUDO","CHOOSE PLAYERS");
