@@ -1,0 +1,4 @@
+plugins { id 'com.android.application' }
+android { namespace 'com.example.dicecontroller'; compileSdk 35
+ defaultConfig { applicationId 'com.example.dicecontroller'; minSdk 23; targetSdk 35; versionCode 1; versionName '1.0' }
+}
