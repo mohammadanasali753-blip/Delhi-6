@@ -83,6 +83,7 @@ public class MainActivity extends Activity {
             if(page==0) home(c);
             else if(page==1) ludo(c);
             else if(page==2) snakes(c);
+            else if(page==4) playerSelect(c);
             else friends(c);
         }
         void logo(Canvas c,float cx,float cy,float s){
@@ -119,8 +120,22 @@ public class MainActivity extends Activity {
             text(c,title,59,36,21,Color.WHITE);
             text(c,sub,59,57,10,0xffa29baa);
         }
+        void playerSelect(Canvas c){
+            header(c,"LUDO","CHOOSE PLAYERS");
+            center(c,"HOW MANY PLAYERS?",getWidth()/2f,135,25,Color.WHITE);
+            center(c,"Choose 2, 3 or 4 players",getWidth()/2f,160,12,0xffaaa5b5);
+            for(int n=2;n<=4;n++){
+                float y=205+(n-2)*105;
+                round(c,30,y,getWidth()-30,y+78,24,0xff19151f);
+                round(c,48,y+15,110,y+63,18,col[n-2]);
+                center(c,""+n,79,y+48,22,Color.WHITE);
+                text(c,n+" PLAYERS",132,y+37,19,Color.WHITE);
+                text(c,"PLAY LUDO  ›",getWidth()-135,y+37,11,0xffc9b8ff);
+            }
+            center(c,"4 gotiyan per player • local pass & play",getWidth()/2f,560,11,0xff777181);
+        }
         void ludo(Canvas c){
-            header(c,"LUDO","2–4 PLAYERS  •  PLAYER "+(turn+1)+" TURN");
+            header(c,"LUDO",""+players+" PLAYERS  •  PLAYER "+(turn+1)+" TURN");
             float top=76;
             float s=Math.min(getWidth()-22,getHeight()-270);
             float left=(getWidth()-s)/2f;
@@ -314,12 +329,16 @@ public class MainActivity extends Activity {
         @Override public boolean onTouchEvent(MotionEvent e){
             if(e.getAction()!=MotionEvent.ACTION_UP)return true;
             float x=e.getX(),y=e.getY();
-            if(page==0){if(y>=240&&y<380)page=1;else if(y<515&&y>=375)page=2;else if(y>=510&&y<645)page=3;}
+            if(page==0){if(y>=240&&y<380)page=4;else if(y<515&&y>=375)page=2;else if(y>=510&&y<645)page=3;}
+            else if(page==4){
+                if(y<65){page=0;return true;}
+                if(y>=190&&y<535){int n=2+(int)((y-190)/105);if(n>=2&&n<=4){players=n;reset();page=1;}}
+            }
             else if(page==1){
                 if(gameOver&&y>330&&y<410){reset();return true;}
                 if(y<65){page=0;return true;}
-                float s=Math.min(getWidth()-22,getHeight()-270),top=76,info=top+s+17;
-                if(y>info+70){
+                float s=Math.min(getWidth()-12,getHeight()-255),top=68,info=top+s+12;
+                if(y>info+55){
                     if(!rolled)roll(1+random.nextInt(6));
                     return true;
                 }
