@@ -52,7 +52,7 @@ public class MainActivity extends Activity {
             p.setTypeface(Typeface.create("sans",Typeface.BOLD));
             Arrays.stream(tok).forEach(a->Arrays.fill(a,-1));
             buildPath();
-            setFocusable(true);
+            setFocusable(true);\n            setClickable(true);
         }
         void buildPath(){
             // clockwise 52-cell ring around the 15x15 board
@@ -118,7 +118,7 @@ public class MainActivity extends Activity {
         void header(Canvas c,String title,String sub){
             text(c,"‹",18,46,40,Color.WHITE);
             text(c,title,59,36,21,Color.WHITE);
-            text(c,sub,59,57,10,0xffa29baa);
+            text(c,sub,59,57,10,0xffa29baa);\n            round(c,getWidth()-112,17,getWidth()-18,47,15,0xff17131f);\n            center(c,"P"+(turn+1)+" ACTIVE",getWidth()-65,37,9,col[Math.min(turn,3)]);
         }
         void playerSelect(Canvas c){
             header(c,"LUDO","CHOOSE PLAYERS");
@@ -209,7 +209,7 @@ public class MainActivity extends Activity {
                 int pos=tok[pl][k];float x,y;
                 if(pos==-1){
                     int bx=pl%2==0?1:11,by=pl<2?1:11;
-                    x=l+(bx+(k%2==0?0:2))*q;y=t+(by+(k<2?0:2))*q;
+                    x=l+(bx+(k%2==0?1.45f:3.55f))*q;y=t+(by+(k<2?1.45f:3.55f))*q;
                 }else if(pos>=52){
                     int step=pos-52;
                     int[][] lane={{7,1},{7,2},{7,3},{7,4},{7,5},{7,6}};
@@ -230,7 +230,7 @@ public class MainActivity extends Activity {
             }
         }
         void drawDice(Canvas c,float cx,float cy,float size,int n){
-            p.setShadowLayer(12,0,5,0x88000000);setLayerType(View.LAYER_TYPE_SOFTWARE,p);
+            p.setShadowLayer(14,0,5,0x99000000);setLayerType(View.LAYER_TYPE_SOFTWARE,p);
             round(c,cx-size/2,cy-size/2,cx+size/2,cy+size/2,14,Color.WHITE);p.clearShadowLayer();
             float d=size*.22f;
             int[][] pts={{-1,-1},{0,-1},{1,-1},{-1,0},{0,0},{1,0},{-1,1},{0,1},{1,1}};
@@ -326,6 +326,10 @@ public class MainActivity extends Activity {
             for(int n=2;n<=4;n++){float y=165+(n-2)*78;round(c,28,y,getWidth()-28,y+58,20,0xff19151f);text(c,n+" PLAYERS",55,y+37,17,Color.WHITE);text(c,"PLAY",getWidth()-88,y+36,11,0xffb8a4ff);}
             text(c,"Internet multiplayer requires a server.",28,430,12,0xffffd166);
         }
+        @Override public boolean performClick(){
+            super.performClick();
+            return true;
+        }
         @Override public boolean onTouchEvent(MotionEvent e){
             if(e.getAction()!=MotionEvent.ACTION_UP)return true;
             float x=e.getX(),y=e.getY();
@@ -335,23 +339,57 @@ public class MainActivity extends Activity {
                 if(y>=190&&y<535){int n=2+(int)((y-190)/105);if(n>=2&&n<=4){players=n;reset();page=1;}}
             }
             else if(page==1){
-                if(gameOver&&y>330&&y<410){reset();return true;}
-                if(y<65){page=0;return true;}
-                float s=Math.min(getWidth()-12,getHeight()-255),top=68,info=top+s+12;
-                if(y>info+55){
-                    if(!rolled)roll(1+random.nextInt(6));
+                if(gameOver){
+                    if(y>=330&&y<=430){reset();invalidate();return true;}
+                    if(y<70){page=0;return true;}
+                    invalidate();return true;
+                }
+                if(y<70){page=0;return true;}
+
+                // Use the exact same board geometry as onDraw().
+                float top=76f;
+                float s=Math.min(getWidth()-22,getHeight()-270);
+                float l=(getWidth()-s)/2f;
+                float q=s/15f;
+                float info=top+s+17f;
+
+                // Large, forgiving dice/control hit zone.
+                boolean diceZone = y>=info+62 && y<=info+166;
+                if(diceZone){
+                    if(!rolled){
+                        roll(1+random.nextInt(6));
+                    }
+                    invalidate();
+                    performClick();
                     return true;
                 }
+
+                // While a dice result is active, tapping a token selects it.
                 if(rolled){
                     for(int k=0;k<4;k++)if(canMove(turn,k,dice)){
-                        // token hit testing
-                        int v=tok[turn][k];float q=s/15f,l=(getWidth()-s)/2f,tx,ty;
-                        if(v==-1){int bx=turn%2==0?1:11,by=turn<2?1:11;tx=l+(bx+(k%2==0?0:2)+.5f)*q;ty=top+(by+(k<2?0:2)+.5f)*q;}
-                        else if(v<52){int g=global(turn,v);tx=l+(path[g][0]+.5f)*q;ty=top+(path[g][1]+.5f)*q;}
-                        else {tx=l+7.5f*q;ty=top+7.5f*q;}
-                        if(Math.hypot(x-tx,y-ty)<q*.75f){moveToken(k);return true;}
+                        int v=tok[turn][k];
+                        float tx,ty;
+                        if(v==-1){
+                            int bx=turn%2==0?1:11,by=turn<2?1:11;
+                            tx=l+(bx+(k%2==0?1.45f:3.55f))*q;
+                            ty=top+(by+(k<2?1.45f:3.55f))*q;
+                        }else if(v<52){
+                            int g=global(turn,v);
+                            tx=l+(path[g][0]+.5f)*q;
+                            ty=top+(path[g][1]+.5f)*q;
+                        }else{
+                            tx=l+7.5f*q;
+                            ty=top+7.5f*q;
+                        }
+                        if(Math.hypot(x-tx,y-ty)<q*1.05f){
+                            moveToken(k);
+                            invalidate();
+                            performClick();
+                            return true;
+                        }
                     }
                 }
+                invalidate();
             }else if(page==2){
                 if(y<65)page=0;else if(y>getHeight()-160)rollSnake();
             }else if(page==3){
