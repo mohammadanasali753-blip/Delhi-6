@@ -54,7 +54,7 @@ public class MainActivity extends Activity{
   }
   void drawLudoBoard(Canvas c,int L,int T,int S,float q){
    rr(c,L-5,T-5,L+S+5,T+S+5,20,0xff25212e);color(Color.WHITE);c.drawRoundRect(L,T,L+S,T+S,15,15,p);
-   int[] pos={{0,0},{10,0},{0,10},{10,10}};for(int k=0;k<4;k++){color(colors[k]);c.drawRect(L+pos[k][0]*q,T+pos[k][1]*q,L+(pos[k][0]+5)*q,T+(pos[k][1]+5)*q,p);color(0x44ffffff);c.drawCircle(L+(pos[k][0]+2.5f)*q,T+(pos[k][1]+2.5f)*q,1.7f*q,p);}
+   int[][] pos={{0,0},{10,0},{0,10},{10,10}};for(int k=0;k<4;k++){color(colors[k]);c.drawRect(L+pos[k][0]*q,T+pos[k][1]*q,L+(pos[k][0]+5)*q,T+(pos[k][1]+5)*q,p);color(0x44ffffff);c.drawCircle(L+(pos[k][0]+2.5f)*q,T+(pos[k][1]+2.5f)*q,1.7f*q,p);}
    color(0xfff5f5f7);c.drawRect(L+5*q,T,L+10*q,T+S,p);c.drawRect(L,T+5*q,L+S,T+10*q,p);
    for(int i=0;i<15;i++){for(int j=0;j<15;j++){if((i>=5&&i<10)&&(j>=5&&j<10))continue;color(0xffd8d6dc);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(1);c.drawRect(L+j*q,T+i*q,L+(j+1)*q,T+(i+1)*q,p);p.setStyle(Paint.Style.FILL);}}
    // home lanes
