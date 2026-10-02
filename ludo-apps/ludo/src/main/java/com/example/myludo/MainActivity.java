@@ -1,15 +1,11 @@
 package com.example.myludo;
-import android.app.*; import android.os.*; import android.graphics.Color; import android.view.*; import android.widget.*; import java.net.*; import java.io.*;
-public class MainActivity extends Activity {
- TextView dice,status; volatile boolean running=true;
- public void onCreate(Bundle b){super.onCreate(b); LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(18,18,18,18); root.setBackgroundColor(Color.rgb(23,21,31));
- TextView title=t("🎲  MY LUDO",28); root.addView(title); TextView info=t("Dice Controller connected via local network.\nPort: 45454",14);root.addView(info);
- dice=t("–",72);dice.setGravity(17);root.addView(dice,new LinearLayout.LayoutParams(-1,180)); status=t("Player 1 की बारी",18);status.setGravity(17);root.addView(status);
- Button roll=new Button(this);roll.setText("ROLL DICE");root.addView(roll);roll.setOnClickListener(v->{int n=1+(int)(Math.random()*6);show(n);});
- Button reset=new Button(this);reset.setText("RESET");root.addView(reset);reset.setOnClickListener(v->{dice.setText("–");status.setText("Player 1 की बारी");});
- setContentView(root); new Thread(this::listen).start();}
- TextView t(String s,int z){TextView v=new TextView(this);v.setText(s);v.setTextColor(Color.WHITE);v.setTextSize(z);v.setPadding(8,14,8,14);return v;}
- void show(int n){runOnUiThread(()->{dice.setText(String.valueOf(n));status.setText("Dice: "+n);});}
- void listen(){try{DatagramSocket s=new DatagramSocket(45454);byte[] b=new byte[32];while(running){DatagramPacket p=new DatagramPacket(b,b.length);s.receive(p);int n=Integer.parseInt(new String(p.getData(),0,p.getLength()).trim());if(n>=1&&n<=6)show(n);}}catch(Exception e){}}
+import android.app.*;import android.os.*;import android.graphics.Color;import android.widget.*;import java.net.*;
+public class MainActivity extends Activity{
+ TextView dice,status;volatile boolean running=true;int currentPlayer=1;
+ public void onCreate(Bundle b){super.onCreate(b);LinearLayout r=new LinearLayout(this);r.setOrientation(LinearLayout.VERTICAL);r.setPadding(18,18,18,18);r.setBackgroundColor(Color.rgb(23,21,31));r.addView(t("🎲 MY LUDO",28));r.addView(t("Wi‑Fi IP: "+getIp(),15));dice=t("–",72);dice.setGravity(17);r.addView(dice,new LinearLayout.LayoutParams(-1,170));status=t("Player 1 की बारी",19);status.setGravity(17);r.addView(status);Button roll=new Button(this);roll.setText("🎲 NORMAL ROLL");r.addView(roll);roll.setOnClickListener(v->{int n=1+(int)(Math.random()*6);show(currentPlayer,n,"Normal");});Button reset=new Button(this);reset.setText("RESET");r.addView(reset);reset.setOnClickListener(v->{currentPlayer=1;dice.setText("–");status.setText("Player 1 की बारी");});setContentView(r);new Thread(this::listen).start();}
+ TextView t(String s,int z){TextView v=new TextView(this);v.setText(s);v.setTextColor(Color.WHITE);v.setTextSize(z);v.setPadding(8,12,8,12);return v;}
+ String getIp(){try{for(java.util.Enumeration<java.net.NetworkInterface>e=NetworkInterface.getNetworkInterfaces();e.hasMoreElements();){java.net.NetworkInterface n=e.nextElement();for(java.util.Enumeration<java.net.InetAddress>a=n.getInetAddresses();a.hasMoreElements();){java.net.InetAddress x=a.nextElement();String s=x.getHostAddress();if(!x.isLoopbackAddress()&&s.indexOf(':')<0)return s;}}}catch(Exception e){}return "unknown";}
+ void show(int p,int n,String src){runOnUiThread(()->{currentPlayer=p;dice.setText(String.valueOf(n));status.setText("Player "+p+" → Dice: "+n+" ("+src+")");});}
+ void listen(){try{DatagramSocket s=new DatagramSocket(45454);byte[]b=new byte[64];while(running){DatagramPacket q=new DatagramPacket(b,b.length);s.receive(q);String z=new String(q.getData(),0,q.getLength()).trim();String[]a=z.split(",");if(a.length==2){int p=Integer.parseInt(a[0]),n=Integer.parseInt(a[1]);if(p>=1&&p<=4&&n>=1&&n<=6)show(p,n,"Controller");}}}catch(Exception e){}}
  protected void onDestroy(){running=false;super.onDestroy();}
 }
